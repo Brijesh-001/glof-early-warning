@@ -1,0 +1,4 @@
+data/
+*.tif
+*.nc
+.ipynb_checkpoints/
