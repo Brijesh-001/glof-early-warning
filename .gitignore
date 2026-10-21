@@ -1,4 +1,13 @@
-data/
-*.tif
-*.nc
+# large model artifact — regenerate with models/gews_modelling.ipynb (see MODEL_ARTIFACT.md)
+*.pkl
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
 .ipynb_checkpoints/
+
+# local data dumps / scratch
+*.zip
+/content/
+gews_data/

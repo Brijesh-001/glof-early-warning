@@ -1,0 +1,9 @@
+lake,date,risk_score,band,driver
+changsang_sikkim,2019-08-19,1.0,high,glacier speed · thermal
+gurudongmar_lake4,2018-12-17,1.0,high,radar change
+ndma081_baspa,2018-04-01,1.0,high,radar change
+khangchung_tso,2020-07-19,1.0,high,glacier speed · glacier accel · thermal
+basudhara_tal,2020-11-06,1.0,high,glacier speed · glacier accel · thermal
+ndma436_chandra,2020-08-08,1.0,high,glacier speed · glacier accel · thermal
+ndma077_parvati,2018-04-11,1.0,high,radar change
+ndma438_spiti,2018-09-18,1.0,high,radar change

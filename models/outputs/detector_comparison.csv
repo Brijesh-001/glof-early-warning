@@ -1,0 +1,5 @@
+detector,peak_runup_southlhonak,false_alarm_pct_other_lakes
+zscore,0.724,21.39
+isolation_forest,0.765,18.12
+one_class_svm,0.911,36.19
+ridge_ar,0.943,41.43

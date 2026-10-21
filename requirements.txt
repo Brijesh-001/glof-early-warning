@@ -1,8 +1,17 @@
-streamlit>=1.50
-plotly>=6.0
-pandas>=2.1
-numpy>=1.26
-pyarrow>=14
-reportlab>=4.0
-matplotlib>=3.8
-pytest>=8
+# GEWS — Python dependencies (model + evaluation).
+# Pin to the versions used so the committed results reproduce and the .pkl loads cleanly.
+numpy>=1.26,<2.3
+pandas>=2.0
+scikit-learn>=1.4
+scipy>=1.11
+matplotlib>=3.7
+pytest>=8.0
+# notebooks
+jupyter>=1.0
+nbformat>=5.9
+# dashboard (Student D)
+fastapi>=0.110
+uvicorn>=0.29
+plotly>=5.18
+# model persistence
+joblib>=1.3

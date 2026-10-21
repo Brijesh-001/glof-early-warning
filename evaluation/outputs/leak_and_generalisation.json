@@ -1,0 +1,40 @@
+{
+  "leak_check": {
+    "pre_event_windows": 194,
+    "max_diff_causal": 0.0,
+    "causal_ok": true,
+    "deliberate_leak_mean_shift": 0.2452243722964212
+  },
+  "unseen_lake": [
+    {
+      "lake": "south_lhonak",
+      "role": "event",
+      "peak_preburst_risk_unseen": 0.79
+    },
+    {
+      "lake": "khecheopalri",
+      "role": "control",
+      "pct_windows_concern_unseen": 10.6
+    },
+    {
+      "lake": "gurudongmar_lake4",
+      "role": "control",
+      "pct_windows_concern_unseen": 8.3
+    },
+    {
+      "lake": "chandratal",
+      "role": "control",
+      "pct_windows_concern_unseen": 5.3
+    },
+    {
+      "lake": "samudra_tapu",
+      "role": "control",
+      "pct_windows_concern_unseen": 5.6
+    },
+    {
+      "lake": "tso_lhamo",
+      "role": "control",
+      "pct_windows_concern_unseen": 7.2
+    }
+  ]
+}

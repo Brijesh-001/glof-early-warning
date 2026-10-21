@@ -1,0 +1,241 @@
+<title>GEWS Modelling Summary</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: single reading column on a soft glacier-neutral ground; one green accent,
+   ice-blue secondary, and traffic-light semantics for the risk bands. */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --ink:#15211a; --muted:#5c6b61; --line:#dde4dd;
+  --accent:#167a3a; --accent-soft:#e4f1e7; --ice:#2b6f8f; --ice-soft:#e2eef3;
+  --ok:#2e8b4f; --warn:#c07c17; --high:#c23a34;
+  --shadow:0 1px 2px rgba(20,40,28,.05),0 8px 24px rgba(20,40,28,.06);
+  --display:"Sora",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1511; --surface:#161f19; --ink:#e8efe8; --muted:#9aa89e; --line:#273328;
+  --accent:#4cc073; --accent-soft:#17301f; --ice:#6fb4d4; --ice-soft:#13262f;
+  --ok:#54c47a; --warn:#e0a53f; --high:#eb6b63;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0e1511; --surface:#161f19; --ink:#e8efe8; --muted:#9aa89e; --line:#273328;
+  --accent:#4cc073; --accent-soft:#17301f; --ice:#6fb4d4; --ice-soft:#13262f;
+  --ok:#54c47a; --warn:#e0a53f; --high:#eb6b63;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding-inline:20px;padding-block:0}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.12;margin:0}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);font-weight:600}
+a{color:var(--accent)}
+
+/* hero */
+.hero{padding-block:clamp(2.6rem,7vw,4.4rem) 1.8rem}
+.hero h1{font-size:clamp(2rem,6.4vw,3.3rem);font-weight:700;letter-spacing:-.02em;margin-top:.7rem}
+.hero .lede{margin-top:1.1rem;font-size:clamp(1.02rem,2.4vw,1.2rem);color:var(--muted);max-width:60ch}
+.who{margin-top:1.4rem;display:inline-flex;gap:.5rem;flex-wrap:wrap;font-size:.84rem}
+.chip{background:var(--accent-soft);color:var(--accent);border:1px solid var(--line);
+  padding:.28rem .7rem;border-radius:999px;font-weight:600}
+.chip.ice{background:var(--ice-soft);color:var(--ice)}
+
+/* stat band */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-block:2rem}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1rem 1.05rem;
+  box-shadow:var(--shadow)}
+.stat .n{font-family:var(--display);font-weight:700;font-size:clamp(1.5rem,4.5vw,2.1rem);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat .l{font-size:.78rem;color:var(--muted);margin-top:.15rem;line-height:1.35}
+@media(max-width:620px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+section{padding-block:1.7rem;border-top:1px solid var(--line)}
+section h2{font-size:clamp(1.3rem,3.6vw,1.7rem);font-weight:600;letter-spacing:-.01em}
+section .body{margin-top:.9rem;display:flex;flex-direction:column;gap:.9rem;color:var(--ink)}
+section .body p{color:var(--ink)}
+.sub{color:var(--muted)}
+
+/* flip callout */
+.flip{background:var(--ink);color:var(--bg);border-radius:16px;padding:1.3rem 1.4rem;margin-block:.4rem}
+.flip b{color:var(--accent)}
+:root[data-theme="dark"] .flip,:root:not([data-theme="light"]) .flip{background:#05211160}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .flip{
+  background:#0a1a10;border:1px solid var(--line);color:var(--ink)}}
+:root[data-theme="dark"] .flip{background:#0a1a10;border:1px solid var(--line);color:var(--ink)}
+
+/* numbered steps */
+.steps{display:grid;gap:10px;margin-top:.4rem}
+.step{display:grid;grid-template-columns:auto 1fr;gap:.9rem;align-items:start;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.85rem 1rem}
+.step .num{font-family:var(--mono);font-weight:600;color:var(--accent);background:var(--accent-soft);
+  width:1.9rem;height:1.9rem;display:grid;place-items:center;border-radius:8px;font-size:.9rem}
+.step h3{font-size:1rem;font-weight:600}
+.step p{font-size:.9rem;color:var(--muted);margin-top:.2rem}
+
+/* sikkim band viz */
+.sikkim{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:1.2rem 1.3rem;
+  box-shadow:var(--shadow)}
+.bands{display:flex;gap:6px;margin:1rem 0 .5rem}
+.band{flex:1;border-radius:8px;padding:.6rem .5rem;text-align:center;font-size:.72rem;font-weight:600;
+  color:#fff;font-family:var(--mono)}
+.band.ok{background:var(--ok)} .band.warn{background:var(--warn)} .band.high{background:var(--high)}
+.track{position:relative;height:30px;margin-top:.3rem}
+.marker{position:absolute;top:0;display:flex;flex-direction:column;align-items:center;transform:translateX(-50%)}
+.marker .dot{width:11px;height:11px;border-radius:50%;background:var(--ice);border:2px solid var(--surface);
+  box-shadow:0 0 0 1px var(--ice)}
+.marker .cap{font-size:.66rem;color:var(--muted);margin-top:.2rem;white-space:nowrap;font-family:var(--mono)}
+
+/* signal importance */
+.sig{display:grid;gap:8px;margin-top:.3rem}
+.sigrow{display:grid;grid-template-columns:9.5rem 1fr;gap:.7rem;align-items:center}
+.sigrow .nm{font-size:.86rem;font-weight:500}
+.barwrap{background:var(--line);border-radius:6px;height:.85rem;overflow:hidden}
+.bar{height:100%;border-radius:6px;background:var(--accent)}
+.bar.dim{background:var(--muted);opacity:.4}
+@media(max-width:480px){.sigrow{grid-template-columns:7rem 1fr}}
+
+/* limits + handoff */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:.4rem}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+.note{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:10px;padding:.85rem 1rem;font-size:.9rem}
+.note b{display:block;margin-bottom:.15rem}
+.hand{display:grid;gap:8px}
+.hrow{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:baseline;
+  border-bottom:1px dashed var(--line);padding-bottom:.6rem}
+.hrow .to{font-family:var(--mono);font-size:.8rem;color:var(--ice);font-weight:600;white-space:nowrap}
+.hrow p{font-size:.9rem}
+.kicker{font-family:var(--mono);font-size:.78rem;color:var(--accent);font-weight:600}
+footer{padding-block:2rem 3rem;color:var(--muted);font-size:.82rem;border-top:1px solid var(--line)}
+.one{background:var(--accent-soft);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.25rem;
+  margin-top:.6rem;font-size:1.02rem}
+.one b{color:var(--accent)}
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">GEWS · Model Development · Student B</div>
+    <h1>Teaching a computer what a glacial lake looks like when it's calm</h1>
+    <p class="lede">So it can quietly raise a flag — with a reason attached — the moment a lake starts
+      behaving unlike itself. Not predicting disasters. Spotting "this is not normal for this lake."</p>
+    <div class="who">
+      <span class="chip">Satellite GLOF early warning</span>
+      <span class="chip ice">7th-sem major project · DSCE</span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">42</div><div class="l">Himalayan lakes watched, every 10 days since 2017</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">real disaster on record — so we never train on disasters</div></div>
+    <div class="stat"><div class="n">~4&nbsp;wk</div><div class="l">early warning on the Sikkim test, before the burst</div></div>
+    <div class="stat"><div class="n">4–5<span style="font-size:.6em;color:var(--muted)"> / 42</span></div><div class="l">how high South Lhonak ranked before it burst</div></div>
+  </div>
+
+  <section>
+    <h2>The problem</h2>
+    <div class="body">
+      <p>Melting glaciers leave lakes held back by loose walls of rock and rubble. Sometimes a wall gives way
+        and the whole lake empties in hours, destroying everything downstream. South Lhonak Lake in Sikkim did
+        exactly this on <b>4 October 2023</b>. The warning signs sat in free satellite pictures for years —
+        but nobody was watching them.</p>
+      <p class="sub">My job on the team is the modelling: turn those satellite measurements into a risk score
+        for each lake, every 10 days.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The idea — flip the problem</h2>
+    <div class="body">
+      <p>You can't teach a computer to recognise a disaster from one example. So instead of learning what a
+        <i>bursting</i> lake looks like, it learns what each lake looks like when it's <i>calm</i> — and there
+        are years of calm data, free. Then it just measures how far today sits from that lake's own normal.</p>
+      <div class="flip">The one real disaster is never used for teaching. It's saved as the
+        <b>final exam</b> — we check whether the system would have caught it, using only data from before it happened.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How it works, in six steps</h2>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><div><h3>Strip out the seasons</h3><p>Every glacial lake grows in summer. The system learns each lake's yearly rhythm and removes it, so summer isn't flagged as danger.</p></div></div>
+      <div class="step"><div class="num">2</div><div><h3>Give each lake its own model</h3><p>A big lake and a small lake are never compared directly. Each is judged only against its own history.</p></div></div>
+      <div class="step"><div class="num">3</div><div><h3>Spot the odd windows</h3><p>Isolation Forest: it makes random cuts to separate a data point from the crowd. A normal week takes many cuts; an odd week takes very few. Few cuts = suspicious.</p></div></div>
+      <div class="step"><div class="num">4</div><div><h3>Combine into one risk score</h3><p>The signals — lake size, radar texture, warmth, glacier speed — are merged into a single number from 0 to 1, weighting the ones that matter most.</p></div></div>
+      <div class="step"><div class="num">5</div><div><h3>Name the reason</h3><p>It doesn't just say "risk is high." It says <i>which</i> signals drove it — "lake area · thermal" — so an officer understands why.</p></div></div>
+      <div class="step"><div class="num">6</div><div><h3>Admit when it's blind</h3><p>If cloud blocked the view it says "cannot assess" — never "safe." Saying "I don't know" and "it's fine" are completely different things.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The final exam — Sikkim 2023</h2>
+    <div class="body">
+      <p>Trained only on data from <b>before</b> 4 October 2023, would the system have flagged South Lhonak
+        before it burst? It did — its risk climbed through September into the <b>concern</b> band as the burst
+        approached, with lake area entering the reason.</p>
+      <div class="sikkim">
+        <div class="kicker">South Lhonak · risk level in the weeks before the burst</div>
+        <div class="bands">
+          <div class="band ok">OK · WATCH<br>0 – 0.70</div>
+          <div class="band warn">CONCERN<br>0.70 – 0.85</div>
+          <div class="band high">HIGH<br>0.85 – 1.0</div>
+        </div>
+        <div class="track">
+          <div class="marker" style="left:34%"><div class="dot"></div><div class="cap">8 wk before</div></div>
+          <div class="marker" style="left:66%"><div class="dot"></div><div class="cap">4 wk before</div></div>
+          <div class="marker" style="left:88%"><div class="dot"></div><div class="cap">burst →</div></div>
+        </div>
+        <p style="font-size:.82rem;color:var(--muted);margin-top:.8rem">It rose into the concern band and to the
+          4th–5th most alarming lake of 42 in the final weeks — pointing at the right lake, ahead of time.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Which signals carried the warning</h2>
+    <div class="body">
+      <p class="sub">We removed each signal and checked whether the warning got weaker. Two did the work; the rest
+        barely helped in this data — an honest, useful finding for the report.</p>
+      <div class="sig">
+        <div class="sigrow"><div class="nm">Glacier speed</div><div class="barwrap"><div class="bar" style="width:100%"></div></div></div>
+        <div class="sigrow"><div class="nm">Lake area</div><div class="barwrap"><div class="bar" style="width:72%"></div></div></div>
+        <div class="sigrow"><div class="nm">Warmth (thermal)</div><div class="barwrap"><div class="bar dim" style="width:18%"></div></div></div>
+        <div class="sigrow"><div class="nm">Radar change</div><div class="barwrap"><div class="bar dim" style="width:14%"></div></div></div>
+        <div class="sigrow"><div class="nm">Glacier acceleration</div><div class="barwrap"><div class="bar dim" style="width:10%"></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Honest limits — say these openly</h2>
+    <div class="grid2">
+      <div class="note"><b>More false alarms than ideal</b>The exact alarm thresholds still need tuning — and that's deliberately Student C's job, not mine.</div>
+      <div class="note"><b>Glacier speed is coarse</b>It only updates once a year, so it over-claims as a "reason." Worth flagging to Student A.</div>
+      <div class="note"><b>No deep-learning model yet</b>The plan says add it only if it beats the simpler models — which hasn't been shown.</div>
+      <div class="note"><b>Not yet independently tested</b>Student C still has to try to break it. Treat the numbers as working, not final.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What I handed over</h2>
+    <div class="hand">
+      <div class="hrow"><div class="to">→ Student C</div><p>Risk scores for all 42 lakes, with the reason column — their input for testing.</p></div>
+      <div class="hrow"><div class="to">→ Student D</div><p>The ranked watch-list with status and reason — the officer view for the dashboard.</p></div>
+      <div class="hrow" style="border-bottom:none"><div class="to">→ The report</div><p>A runnable notebook, the evidence charts, and a methodology write-up.</p></div>
+    </div>
+  </section>
+
+  <section style="border-top:none">
+    <div class="one">In one line: I built the part of GEWS that <b>learns each lake's normal</b> and raises a flag —
+      with a reason attached — when a lake drifts, and showed it would have caught the Sikkim disaster weeks in advance.</div>
+  </section>
+
+  <footer>
+    GEWS — Glacial Lake Outburst Flood Early-Warning System · Dept. of AI &amp; ML, DSCE ·
+    Model Development (Student B) · Oct 2026
+  </footer>
+
+</div>

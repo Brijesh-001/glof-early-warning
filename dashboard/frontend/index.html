@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GEWS Watch Console</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="/vendor/plotly.min.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>GEWS Watch Console</h1>
+    <span class="sub">Glacial Lake Outburst Flood Early-Warning · decision support only</span>
+  </div>
+  <div id="versions" class="versions"></div>
+</header>
+
+<nav id="tabs">
+  <button data-tab="watch" class="active">Watch-list</button>
+  <button data-tab="data">Data</button>
+  <button data-tab="model">Modelling</button>
+  <button data-tab="eval">Evaluation</button>
+  <button data-tab="tests">Testing</button>
+</nav>
+
+<main>
+  <!-- WATCH-LIST -->
+  <section id="tab-watch" class="tab active">
+    <div class="notice">This system never issues a public alert. <b>Cannot assess</b> means the lake
+      was not visible — it does <b>not</b> mean safe.</div>
+    <div id="watch-kpis" class="kpis"></div>
+    <div class="grid two">
+      <div class="card">
+        <h2>Ranked watch-list (latest window per lake)</h2>
+        <div class="table-wrap"><table id="watch-table"></table></div>
+      </div>
+      <div class="card">
+        <h2>Lake detail <select id="lake-select"></select></h2>
+        <div id="lake-chart" class="chart tall"></div>
+        <div id="lake-meta" class="meta"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA -->
+  <section id="tab-data" class="tab">
+    <div id="data-kpis" class="kpis"></div>
+    <div class="grid two">
+      <div class="card"><h2>Signal coverage by lake (% of windows with a value)</h2>
+        <div id="coverage-chart" class="chart tall"></div></div>
+      <div class="card"><h2>Transformed signals <select id="data-lake-select"></select></h2>
+        <div id="signals-chart" class="chart tall"></div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h2>Per-signal anomaly scores (Isolation Forest)</h2>
+        <div id="persignal-chart" class="chart"></div></div>
+      <div class="card"><h2>Descriptive statistics</h2>
+        <div class="table-wrap"><table id="stats-table"></table></div></div>
+    </div>
+    <div class="card"><h2>Static terrain (DEM)</h2>
+      <div class="table-wrap"><table id="dem-table"></table></div></div>
+    <div class="card"><h2>Per-lake data inventory</h2>
+      <div class="table-wrap short"><table id="inventory-table"></table></div></div>
+  </section>
+
+  <!-- MODELLING -->
+  <section id="tab-model" class="tab">
+    <div id="model-kpis" class="kpis"></div>
+    <div class="grid two">
+      <div class="card"><h2>Detector comparison</h2>
+        <p class="hint">Run-up peak on South Lhonak (higher = sees the event) vs. false-alarm % on the other lakes (lower = calmer).</p>
+        <div id="detector-chart" class="chart"></div></div>
+      <div class="card"><h2>Signal ablation — peak run-up when one signal is dropped</h2>
+        <div id="ablation-chart" class="chart"></div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h2>Risk-score distribution (assessed windows)</h2>
+        <div id="hist-chart" class="chart"></div></div>
+      <div class="card"><h2>Band mix by year</h2>
+        <div id="year-chart" class="chart"></div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h2>Most frequent drivers</h2>
+        <div id="driver-chart" class="chart"></div></div>
+      <div class="card"><h2>Fusion weights &amp; configuration</h2>
+        <div id="weights-chart" class="chart short"></div>
+        <div id="config" class="meta"></div></div>
+    </div>
+    <div class="card"><h2>Abstention reasons</h2>
+      <div class="table-wrap short"><table id="abstain-table"></table></div></div>
+    <div class="card"><h2>Pipeline chart: South Lhonak 2023</h2>
+      <img src="/api/images/south_lhonak_2023" alt="South Lhonak 2023 risk trajectory chart" class="figure"></div>
+  </section>
+
+  <!-- EVALUATION -->
+  <section id="tab-eval" class="tab">
+    <div class="actions"><button id="rerun-eval">Re-run evaluation</button><span id="rerun-status"></span></div>
+    <div id="eval-kpis" class="kpis"></div>
+    <div class="grid two">
+      <div class="card"><h2>South Lhonak — weeks before the 4 Oct 2023 burst</h2>
+        <div id="trajectory-chart" class="chart tall"></div></div>
+      <div class="card"><h2>Threshold sweep — lead time vs. false alarms</h2>
+        <div id="sweep-chart" class="chart tall"></div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h2>Detection metrics per band</h2>
+        <div class="table-wrap"><table id="detection-table"></table></div></div>
+      <div class="card"><h2>False alarms on control lakes</h2>
+        <div id="fa-chart" class="chart"></div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h2>Leak / cheating check</h2><div id="leak" class="meta"></div></div>
+      <div class="card"><h2>Unseen-lake generalisation</h2>
+        <div id="unseen-chart" class="chart"></div></div>
+    </div>
+    <div class="card"><h2>Failure cases (worst false alarms)</h2>
+      <div class="table-wrap"><table id="failure-table"></table></div></div>
+    <div class="card"><h2>Pipeline chart: evaluation dashboard</h2>
+      <img src="/api/images/evaluation_dashboard" alt="Evaluation dashboard chart from the pipeline" class="figure"></div>
+  </section>
+
+  <!-- TESTING -->
+  <section id="tab-tests" class="tab">
+    <div class="actions"><button id="run-tests">Run test suite</button><span id="tests-status"></span></div>
+    <div id="test-kpis" class="kpis"></div>
+    <div class="grid two">
+      <div class="card"><h2>Test results</h2>
+        <div class="table-wrap"><table id="tests-table"></table></div></div>
+      <div class="card"><h2>Duration per test (ms)</h2>
+        <div id="tests-chart" class="chart tall"></div></div>
+    </div>
+    <div class="card"><h2>pytest output</h2><pre id="tests-log"></pre></div>
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

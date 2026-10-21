@@ -1,0 +1,7 @@
+config,peak_runup
+all_signals,0.765
+drop_lake_area_km2,0.731
+drop_velocity_trend,0.677
+drop_velocity_accel,0.82
+drop_sar_backscatter_change,0.817
+drop_thermal_index,0.793

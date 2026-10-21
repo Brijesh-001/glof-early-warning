@@ -1,76 +1,101 @@
-# GEWS: Glacial Lake Outburst Flood Early-Warning System
+# GEWS — Glacial Lake Outburst Flood Early-Warning System
 
-Decision support for 41 Himalayan glacial lakes, built from free satellite data.
-**This system never issues a public alert.** Where it cannot see, it says so.
+Satellite-based decision support that watches Himalayan glacial lakes and flags the ones
+behaving abnormally — so a disaster-management officer can act weeks ahead, not minutes.
+Major Project, 7th Semester · Dept. of AI & ML, DSCE.
 
-## Run the dashboard
+> **Decision support only.** This system never issues a public alert. Where it cannot see a
+> lake it reports **cannot assess** — which is not the same as *safe*.
+
+---
+
+## What this repository is
+
+The four project stages, assembled into one connected pipeline. Each stage writes files with
+a fixed schema; the next stage reads them. That is the whole "connection" — a wrong number can
+always be traced to exactly one stage.
+
+```
+ data/            models/              evaluation/           dashboard/
+ (Student A)  →   (Student B)      →   (Student C)       →   (Student D)
+ 42 lakes,        per-lake anomaly     lead time, leak        ranked watch-list
+ 10-day windows   score + driver       check, generalisation  for the officer
+ + DEM            → risk 0–1           → is it trustworthy?    → a human decides
+```
+
+| Stage | Folder | Owner | Reads | Writes |
+|-------|--------|-------|-------|--------|
+| Data | `data/` | Student A | satellite archives | `lake_data/*.csv`, `dem_static.csv` |
+| Modelling | `models/` | Student B | `data/lake_data/` | `outputs/anomaly_scores_all_lakes.csv`, `watchlist_latest.csv` |
+| Evaluation | `evaluation/` | Student C | `models/outputs/` | `outputs/` (metrics, leak check, charts) |
+| Dashboard | `dashboard/` | Student D | `models/outputs/` | the Watch Console UI |
+
+---
+
+## Quick start
 
 ```bash
-conda env create -f environment.yml   # or: pip install -r requirements.txt
-conda activate gews
-streamlit run app/app.py
+pip install -r requirements.txt
+
+# run the whole chain end-to-end (model scoring takes ~9 min the first time, then caches)
+python run_pipeline.py
+
+# or run a stage on its own:
+cd models      && python gews_spec.py ../data/lake_data outputs        # B: score all lakes
+cd evaluation  && python gews_evaluation.py                            # C: metrics + Sikkim test
+cd evaluation  && python gews_leak_gen.py                              # C: leak check + unseen-lake
+cd evaluation  && pytest test_evaluation.py                            # C: 9 harness unit tests
+
+# D: open the Watch Console (data, modelling, evaluation and testing views)
+python dashboard/run.py                                                 # http://127.0.0.1:8000
 ```
 
-Open http://localhost:8501. With no pipeline output present, the dashboard runs on
-synthetic demo data and shows a demo banner on every page.
+The committed `*/outputs/` files are the current results (model **2.1.0**, data **v3-final**),
+so you can read every result without re-running anything.
 
-## Pages
+---
 
-| Page | What it answers |
-|---|---|
-| Watch-list | Which lakes are most unlike their own past this window? Which could not be assessed, and why? |
-| Lake detail | Risk history with blind spells, per-signal scores, observability, and an A4 evidence PDF with a signature block |
-| What we can see | Assessability with and without radar, per-lake radar gain, a lake-by-window grid, longest blind spells |
-| How it was tested | Retrospective test on South Lhonak, detector comparison, signal ablation, the instrument-limit argument |
-| Scope and limits | What the system is and is not, how the ranking is produced, known limits, terms |
+## The method, in one paragraph
 
-The 10-day window selector in the sidebar applies to every page.
+Only one GLOF is confirmed in our lakes and years (South Lhonak, 4 Oct 2023), so the system is
+never trained to recognise disasters. Instead it learns what each lake looks like when **calm**
+and measures how far the latest 10-day window has drifted from that lake's own normal. Five
+signals (lake area, glacier speed, glacier acceleration, a thermal index, and radar-backscatter
+change) are scored per lake, fused with a weighted p-norm into one **risk score (0–1)**, and the
+top signals are reported as the **driver** ("why"). If too little of the lake was visible, the
+window **abstains** instead of scoring. Fitting is **walk-forward** — a window is only ever scored
+by a model trained on its own past — so the retrospective test cannot cheat.
 
-## Connecting the pipeline
+---
 
-The dashboard reads (never writes) these files from `data/processed/`, or from the folder in `GEWS_DATA_DIR`:
+## Headline results (see `evaluation/EVALUATION_REPORT.md`)
 
-| File | Layer | Columns |
-|---|---|---|
-| `lakes.csv` | register | `lake_id, name, region, lat, lon`; optional `elevation_m, area_ref_km2`, and per-lake threshold overrides `watch, concern, high` |
-| `features.parquet` | L3 | `lake_id, window_start, lake_area_km2, velocity_trend, velocity_accel, thermal_index, sar_backscatter_change, observability, obs_optical, obs_radar, obs_velocity, obs_thermal` |
-| `scores.parquet` | L4 | `lake_id, window_start, risk, abstain_reason, score_<signal>` for each of the 5 signals, `contributing_signals` (`;`-separated, most important first) |
-| `evaluation.json` | evaluation | optional; same keys as `REPORTED` in `app/gews_ui/results.py` |
-| `events.csv` | — | optional: `lake_id, date, description` |
-| `manifest.json` | — | optional: `{"data_version": "v3-final"}` |
+- **Detects the real event:** South Lhonak reaches the *watch/concern* level well before the burst.
+- **No leakage:** pre-event scores are identical whether or not post-event data exists (max diff 0.00).
+- **Generalises:** held out entirely, South Lhonak still peaks at 0.79 — the method didn't just memorise.
+- **Honest limitation:** ~2.5 false alarms per lake-year at the current thresholds, and the real
+  event never reaches sustained *high*. So the system is usable as a **ranked watch-list**, not yet
+  as an automatic alarm. Threshold calibration is the main open task.
 
-Rules the loader enforces:
+---
 
-- An abstaining window has `risk = NaN` and a non-empty `abstain_reason`. A numeric risk on an abstaining row is rejected.
-- `window_start` is the 1st, 11th or 21st of a month (36 windows a year).
-- Missing windows are shown as gaps. Nothing is interpolated.
+## Known limitations / open work
 
-## Tests
+- **DEM is a 2-lake proof-of-concept.** `data/dem_static.csv` covers South Lhonak and Gurudongmar
+  only (coordinates for the other 40 not yet collected). It feeds a future *hazard index*, not the
+  anomaly model.
+- **Radar-benefit number** needs Student A's per-sensor observability (we only have the combined value).
+- **Threshold calibration** (false-alarm rate) is the main fix back to Student B.
+- The trained model artifact (`gews_model.pkl`, ~375 MB) is **not committed** — see
+  `models/MODEL_ARTIFACT.md` to regenerate it.
 
-```bash
-pytest tests/
-```
+---
 
-`tests/test_dashboard.py` checks the display rules: blind lakes are never ranked, NaN never becomes 0 or "normal",
-gaps are kept, the fusion matches the formula, and the evidence PDF builds for both scored and blind lakes.
+## Team roles (A/B/C/D per the project handbooks)
 
-## Code layout
+- **A — Data Collection:** satellite extraction, cloud masking, the common 10-day grid, radar.
+- **B — Model Development:** the anomaly pipeline and risk score (`models/`).
+- **C — Testing & Evaluation:** the honest test suite and the Sikkim experiment (`evaluation/`).
+- **D — App Development:** the Watch Console dashboard (`dashboard/`), report and paper.
 
-```
-app/
-  app.py              entry point, navigation, window selector
-  views/              one file per page
-  gews_ui/
-    config.py         frozen thresholds, fusion weights, fusion and level functions
-    data.py           data contract, loader, validation, watch-list and series views
-    demo.py           synthetic demo data (same schema)
-    results.py        evaluation results (evaluation.json or deck values)
-    charts.py         Plotly figures; gaps are never bridged
-    components.py     watch-list table and banners
-    report.py         A4 evidence PDF
-    theme.py          colours, type, CSS, Plotly template
-.streamlit/config.toml
-tests/test_dashboard.py
-```
-
-Data: ESA Copernicus, NASA, NRSC/ISRO. Code MIT-licensed.
+See `docs/` for the full briefs, handbooks, and the project spec.

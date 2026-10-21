@@ -1,0 +1,150 @@
+{
+  "n_lakes": 42,
+  "n_controls": 41,
+  "event_lake": "south_lhonak",
+  "event_date": "2023-10-04",
+  "sikkim_lead_time_weeks": {
+    "watch": 25.1,
+    "concern": 25.1,
+    "high": null
+  },
+  "false_alarm": {
+    "watch": {
+      "episodes": 857,
+      "lake_years": 333.9,
+      "per_lake_year": 2.57,
+      "pct_windows": 63.7
+    },
+    "concern": {
+      "episodes": 744,
+      "lake_years": 333.9,
+      "per_lake_year": 2.23,
+      "pct_windows": 46.0
+    },
+    "high": {
+      "episodes": 821,
+      "lake_years": 333.9,
+      "per_lake_year": 2.46,
+      "pct_windows": 18.1
+    }
+  },
+  "cannot_assess": {
+    "overall_pct": 18.5,
+    "monsoon_pct": 17.6,
+    "dry_pct": 19.0
+  },
+  "detection": {
+    "watch": {
+      "detected": true,
+      "control_false_alarms": 857,
+      "precision": 0.0012,
+      "recall": 1.0
+    },
+    "concern": {
+      "detected": true,
+      "control_false_alarms": 744,
+      "precision": 0.0013,
+      "recall": 1.0
+    },
+    "high": {
+      "detected": false,
+      "control_false_alarms": 821,
+      "precision": 0.0,
+      "recall": 0.0
+    }
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.5,
+      "sikkim_lead_weeks": 25.1,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 2.57
+    },
+    {
+      "threshold": 0.55,
+      "sikkim_lead_weeks": 25.1,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 2.2
+    },
+    {
+      "threshold": 0.6,
+      "sikkim_lead_weeks": 25.1,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 1.96
+    },
+    {
+      "threshold": 0.65,
+      "sikkim_lead_weeks": 25.1,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 1.6
+    },
+    {
+      "threshold": 0.7,
+      "sikkim_lead_weeks": 25.1,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 2.23
+    },
+    {
+      "threshold": 0.75,
+      "sikkim_lead_weeks": 23.7,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 2.35
+    },
+    {
+      "threshold": 0.8,
+      "sikkim_lead_weeks": 23.7,
+      "sikkim_detected": true,
+      "control_false_alarms_per_lake_year": 1.95
+    },
+    {
+      "threshold": 0.85,
+      "sikkim_lead_weeks": 0,
+      "sikkim_detected": false,
+      "control_false_alarms_per_lake_year": 2.46
+    },
+    {
+      "threshold": 0.9,
+      "sikkim_lead_weeks": 0,
+      "sikkim_detected": false,
+      "control_false_alarms_per_lake_year": 1.86
+    },
+    {
+      "threshold": 0.95,
+      "sikkim_lead_weeks": 0,
+      "sikkim_detected": false,
+      "control_false_alarms_per_lake_year": 0.66
+    }
+  ],
+  "top_false_alarms": [
+    {
+      "lake": "changsang_sikkim",
+      "date": "2019-08-19",
+      "risk_score": 1.0,
+      "driver": "glacier speed \u00b7 thermal"
+    },
+    {
+      "lake": "gurudongmar_lake4",
+      "date": "2018-12-17",
+      "risk_score": 1.0,
+      "driver": "radar change"
+    },
+    {
+      "lake": "ndma081_baspa",
+      "date": "2018-04-01",
+      "risk_score": 1.0,
+      "driver": "radar change"
+    },
+    {
+      "lake": "khangchung_tso",
+      "date": "2020-07-19",
+      "risk_score": 1.0,
+      "driver": "glacier speed \u00b7 glacier accel \u00b7 thermal"
+    },
+    {
+      "lake": "basudhara_tal",
+      "date": "2020-11-06",
+      "risk_score": 1.0,
+      "driver": "glacier speed \u00b7 glacier accel \u00b7 thermal"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "spec": "GEWS_Project_Concise",
+  "detector": "isolation_forest",
+  "if_params": {
+    "n_estimators": 300,
+    "max_samples": 256,
+    "contamination": 0.02
+  },
+  "weights": {
+    "lake_area_km2": 0.3,
+    "velocity_trend": 0.2,
+    "velocity_accel": 0.2,
+    "sar_backscatter_change": 0.2,
+    "thermal_index": 0.1
+  },
+  "p_norm": 3,
+  "thresholds": {
+    "watch": 0.5,
+    "concern": 0.7,
+    "high": 0.85
+  },
+  "abstain": {
+    "obs_floor": 0.3,
+    "min_history": 24
+  },
+  "detector_comparison": [
+    {
+      "detector": "zscore",
+      "peak_runup_southlhonak": 0.724,
+      "false_alarm_pct_other_lakes": 21.39
+    },
+    {
+      "detector": "isolation_forest",
+      "peak_runup_southlhonak": 0.765,
+      "false_alarm_pct_other_lakes": 18.12
+    },
+    {
+      "detector": "one_class_svm",
+      "peak_runup_southlhonak": 0.911,
+      "false_alarm_pct_other_lakes": 36.19
+    },
+    {
+      "detector": "ridge_ar",
+      "peak_runup_southlhonak": 0.943,
+      "false_alarm_pct_other_lakes": 41.43
+    }
+  ],
+  "ablation": [
+    {
+      "config": "all_signals",
+      "peak_runup": 0.765
+    },
+    {
+      "config": "drop_lake_area_km2",
+      "peak_runup": 0.731
+    },
+    {
+      "config": "drop_velocity_trend",
+      "peak_runup": 0.677
+    },
+    {
+      "config": "drop_velocity_accel",
+      "peak_runup": 0.82
+    },
+    {
+      "config": "drop_sar_backscatter_change",
+      "peak_runup": 0.817
+    },
+    {
+      "config": "drop_thermal_index",
+      "peak_runup": 0.793
+    }
+  ],
+  "n_assessed": 12319
+}

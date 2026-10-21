@@ -1,0 +1,68 @@
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --ink: #1c2330; --muted: #5d6675; --line: #e1e4ea;
+  --accent: #2f5fd0;
+  --high: #c62828; --concern: #ef6c00; --watch: #f2b705; --ok: #3a8f5c; --abst: #8b929c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --panel: #1a2029; --ink: #e6e9ee; --muted: #9aa3b1; --line: #2b3340;
+    --accent: #7aa2ff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --panel: #1a2029; --ink: #e6e9ee; --muted: #9aa3b1; --line: #2b3340;
+  --accent: #7aa2ff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+  gap: 8px; padding: 14px 24px; background: var(--panel); border-bottom: 1px solid var(--line); }
+h1 { margin: 0; font-size: 20px; }
+.sub { color: var(--muted); font-size: 13px; }
+.versions { color: var(--muted); font-size: 12px; text-align: right; }
+nav { display: flex; gap: 4px; padding: 0 24px; background: var(--panel);
+  border-bottom: 1px solid var(--line); overflow-x: auto; }
+nav button { background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted);
+  padding: 12px 14px; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+main { padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+.tab { display: none; } .tab.active { display: block; }
+
+.notice { background: var(--panel); border-left: 4px solid var(--concern); padding: 10px 14px;
+  margin-bottom: 16px; border-radius: 4px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.kpi .v { font-size: 24px; font-weight: 700; }
+.kpi .l { color: var(--muted); font-size: 12px; }
+.grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 1000px) { .grid.two { grid-template-columns: 1fr; } main, header, nav { padding-left: 16px; padding-right: 16px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+  margin-bottom: 16px; min-width: 0; }
+.card h2 { margin: 0 0 10px; font-size: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.hint { color: var(--muted); margin: -4px 0 8px; font-size: 12px; }
+.chart { height: 340px; } .chart.tall { height: 430px; } .chart.short { height: 220px; }
+.meta { color: var(--muted); font-size: 13px; }
+.meta b { color: var(--ink); }
+.figure { max-width: 100%; border-radius: 4px; background: #fff; }
+
+select, .actions button { font: inherit; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); }
+.actions { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.actions button { background: var(--accent); color: #fff; border: 0; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+.actions button:disabled { opacity: .6; cursor: wait; }
+
+.table-wrap { overflow: auto; max-height: 520px; } .table-wrap.short { max-height: 320px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-weight: 600; }
+tbody tr:hover { background: var(--bg); }
+tr.clickable { cursor: pointer; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; color: #fff; }
+.pill.high { background: var(--high); } .pill.concern { background: var(--concern); }
+.pill.watch { background: var(--watch); color: #222; } .pill.ok { background: var(--ok); }
+.pill.cannot_assess { background: repeating-linear-gradient(45deg, var(--abst) 0 4px, #6d737c 4px 8px); }
+.pill.passed { background: var(--ok); } .pill.failed { background: var(--high); } .pill.skipped { background: var(--abst); }
+pre { background: var(--bg); padding: 10px; border-radius: 6px; overflow: auto; max-height: 360px; font-size: 12px; }
+.good { color: var(--ok); font-weight: 700; } .bad { color: var(--high); font-weight: 700; }
