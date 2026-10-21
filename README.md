@@ -1,100 +1,226 @@
-# GEWS — Glacial Lake Outburst Flood Early-Warning System
+# GEWS — Glacial Early Warning System
 
-Satellite-based decision support that watches Himalayan glacial lakes and flags the ones
-behaving abnormally — so a disaster-management officer can act weeks ahead, not minutes.
-Major Project, 7th Semester · Dept. of AI & ML, DSCE.
+## Overview
 
-> **Decision support only.** This system never issues a public alert. Where it cannot see a
-> lake it reports **cannot assess** — which is not the same as *safe*.
+The **Glacial Early Warning System (GEWS)** is a satellite-based decision-support system designed to study and monitor glacial lakes in the Indian Himalaya for potential Glacial Lake Outburst Floods (GLOFs).
 
----
+Glacial Lake Outburst Floods occur when water stored in a glacial lake is suddenly released, potentially causing severe downstream flooding and damage to communities, infrastructure, and ecosystems.
 
-## What this repository is
+GEWS combines satellite-derived environmental indicators into a fused risk score and presents the results through an interactive watch console. The system supports historical risk analysis, lake prioritisation, and assessment of satellite data availability.
 
-The four project stages, assembled into one connected pipeline. Each stage writes files with
-a fixed schema; the next stage reads them. That is the whole "connection" — a wrong number can
-always be traced to exactly one stage.
+The project focuses on two important questions:
 
-```
- data/        →   models/          →   evaluation/       →   dashboard/
- 42 lakes,        per-lake anomaly     lead time, leak        ranked watch-list
- 10-day windows   score + driver       check, generalisation  for the officer
- + DEM            → risk 0–1           → is it trustworthy?    → a human decides
-```
+- Can satellite-derived indicators identify periods of elevated glacial lake risk?
+- How can multiple satellite sensors improve lake monitoring when some observations are unavailable?
 
-| Stage | Folder | Reads | Writes |
-|-------|--------|-------|--------|
-| Data | `data/` | satellite archives | `lake_data/*.csv`, `dem_static.csv` |
-| Modelling | `models/` | `data/lake_data/` | `outputs/anomaly_scores_all_lakes.csv`, `watchlist_latest.csv` |
-| Evaluation | `evaluation/` | `models/outputs/` | `outputs/` (metrics, leak check, charts) |
-| Dashboard | `dashboard/` | `models/outputs/` | the Watch Console UI |
+## Key Features
 
----
+- **Interactive 3D Watch Surface:** Visualises glacial lakes as columns whose heights represent their fused risk scores for a selected time window.
+- **Time-Series Analysis:** Explores historical risk scores across multiple observation windows from 2017 to 2024.
+- **Ranked Watch List:** Orders lakes by their current assessed risk and displays severity indicators, status labels, and recent risk trends.
+- **Lake-Level Analysis:** Displays historical risk scores, risk thresholds, and periods when the system could not assess a lake.
+- **Multi-Sensor Monitoring:** Incorporates optical, Synthetic Aperture Radar (SAR), surface velocity, thermal, and terrain-related indicators.
+- **Data Observability:** Shows the availability and contribution of different sensor types to lake assessment.
+- **Event Analysis:** Supports examination of the South Lhonak Lake outburst on 4 October 2023.
+- **Abstention-Aware Visualisation:** Explicitly distinguishes lakes that cannot be assessed from lakes with low assessed risk.
+- **Offline Console:** Provides a standalone HTML version for demonstrations and presentations without requiring a server.
 
-## Quick start
+## System Architecture
+
+The console uses a lightweight static architecture consisting of an HTML interface and a JSON data feed.
+
+| Component | Purpose |
+|---|---|
+| `index.html` | Interactive dashboard, visualisations, and user interface |
+| `data.json` | Processed lake records, risk scores, sensor indicators, and historical observations |
+| `GEWS_Watch_Console.html` | Standalone offline version with data embedded in the HTML file |
+| `config/thresholds.yaml` | Defines risk thresholds and fusion weights used by the analysis pipeline |
+| `config/pipeline.yaml` | Contains pipeline configuration, including the study period |
+
+The dashboard fetches `data.json` when it loads. Updating the data feed does not require rebuilding the HTML interface.
+
+The analytical pipeline processes satellite-derived features, observability information, lake metadata, and risk scores to generate the data consumed by the console.
+
+## Dataset and Study Period
+
+The current console contains records for **41 glacial lakes across 288 ten-day observation windows**, covering 1 January 2017 to 21 December 2024.
+
+The data includes:
+
+- Fused risk scores and assessment status.
+- Optical and SAR-derived lake-area indicators.
+- Surface velocity trends and acceleration.
+- Thermal indicators.
+- SAR backscatter changes.
+- Terrain and slope-related indicators.
+- Sensor observability and reasons for unavailable assessments.
+- Lake coordinates, provenance information, and potential glacial lake identification flags.
+
+### Data Sources
+
+The study uses satellite and geospatial datasets accessed through the following sources:
+
+- **Sentinel-2 Level-2A:** Optical satellite observations.
+- **Sentinel-1 RTC:** Radar observations for monitoring under conditions where optical imagery may be limited.
+- **MODIS MOD11A1:** Land surface temperature observations.
+- **Copernicus GLO-30:** Digital elevation data.
+- **NASA/JPL ITS_LIVE:** Surface velocity observations.
+- **NRSC/ISRO Glacial Lake Atlases:** Glacial lake inventory information.
+
+The data-processing pipeline uses the Microsoft Planetary Computer STAC API and other relevant public data repositories to access the required datasets.
+
+## Risk Assessment Methodology
+
+GEWS combines multiple environmental indicators into a fused risk score. The interface uses the following predefined thresholds to classify assessed lakes.
+
+| Risk Level | Fused Risk Score |
+|---|---:|
+| High | ≥ 0.85 |
+| Concern | ≥ 0.70 |
+| Watch | ≥ 0.50 |
+| Low | < 0.50 |
+| Cannot Assess | No valid assessment |
+
+The risk thresholds and fusion weights are defined in the project configuration. They remain fixed for the reported analysis to preserve reproducibility.
+
+### Handling Missing Observations
+
+A central design principle is that **an unassessed lake must never be interpreted as a low-risk lake**.
+
+When the available data is insufficient for assessment, the console explicitly marks the lake as *Cannot Assess*. This state is represented through:
+
+- Desaturated grey styling.
+- Hatched markers and chart columns.
+- Explicit status text instead of a misleading risk number.
+- An explanation that unavailable observations do not imply safety.
+
+This approach helps distinguish low assessed risk from uncertainty caused by missing or insufficient observations.
+
+## Dashboard Components
+
+### 1. Interactive Watch Surface
+
+Displays the lakes as a three-dimensional surface of risk scores. Users can rotate the visualisation, inspect individual lakes, and compare their scores against the watch threshold.
+
+### 2. Time Scrubber
+
+Allows users to move through the 288 historical observation windows. Playback controls support temporal exploration, including examination of the South Lhonak Lake outburst period.
+
+### 3. Ranked Watch List
+
+Presents lakes in descending order of their current assessed risk. It includes severity indicators, assessment status, relevant event or potential lake flags, and recent risk traces.
+
+### 4. Lake Detail View
+
+Displays the selected lake's historical risk series, assessment thresholds, unavailable observation periods, and the outburst event marker where applicable. Users can toggle individual environmental indicators to explore their contributions.
+
+### 5. Provenance and Observability Panel
+
+Shows contributing indicators, optical and SAR/thermal observability information, and lake inventory provenance for the selected observation window.
+
+## Key Findings
+
+### 1. Limitations in Anticipating the South Lhonak Outburst
+
+The historical analysis indicates that the fused risk score for South Lhonak Lake did not cross the concern threshold of 0.70 or the high-risk threshold of 0.85 during the 27-window run-up to the 4 October 2023 outburst.
+
+The maximum score during this period was **0.769**.
+
+The watch threshold of 0.50 was crossed 245 days before the event. However, this threshold was associated with a reported false-alarm rate of 6.7% and 24.1 alarm-days per lake-year.
+
+These results indicate that the system did not anticipate the event at the evaluated operationally relevant thresholds. This limitation is an important finding of the study.
+
+### 2. Improved Assessment Coverage Through SAR
+
+Adding SAR observations substantially improved the proportion of monsoon observation windows that could be assessed.
+
+| Monitoring Approach | Assessable Monsoon Windows |
+|---|---:|
+| Optical observations only | 42.1% |
+| All sensors, including SAR | 97.7% |
+
+The inclusion of additional sensors recovered **2,197 of 3,936 monsoon windows** that were otherwise unavailable for assessment.
+
+This demonstrates the value of multi-sensor monitoring for improving data coverage. Improved coverage, however, should not be interpreted as proof of improved event anticipation.
+
+## Technology Stack
+
+- **Frontend:** HTML, CSS, JavaScript.
+- **Visualisation:** Canvas-based interactive graphics and 3D-style watch surface.
+- **Data Format:** JSON.
+- **Geospatial and Satellite Data:** Sentinel-1, Sentinel-2, MODIS, Copernicus GLO-30, ITS_LIVE, and glacial lake inventories.
+- **Data Processing:** Python-based analytical pipeline.
+- **Risk Analysis:** Fused environmental indicators and fixed, configuration-defined thresholds.
+- **Version Control:** Git and GitHub.
+
+The dashboard is a static website and does not require a dedicated application server, backend API, or frontend build process.
+
+## Installation and Local Usage
+
+### Prerequisites
+
+- A modern web browser.
+- Git, if cloning the repository.
+- Python 3, if serving the console locally.
+
+### Clone the Repository
 
 ```bash
-pip install -r requirements.txt
-
-# run the whole chain end-to-end (model scoring takes ~9 min the first time, then caches)
-python run_pipeline.py
-
-# or run a stage on its own:
-cd models      && python gews_spec.py ../data/lake_data outputs        # score all lakes
-cd evaluation  && python gews_evaluation.py                            # metrics + Sikkim test
-cd evaluation  && python gews_leak_gen.py                              # leak check + unseen-lake
-cd evaluation  && pytest test_evaluation.py                            # 9 harness unit tests
-
-# open the Watch Console (data, modelling, evaluation and testing views)
-python dashboard/run.py                                                 # http://127.0.0.1:8000
+git clone <repository-url>
+cd glof-early-warning
 ```
 
-The committed `*/outputs/` files are the current results (model **2.1.0**, data **v3-final**),
-so you can read every result without re-running anything.
+Replace `<repository-url>` with the repository's clone URL.
 
----
+### Run the Console Locally
 
-## The method, in one paragraph
+Because `index.html` fetches `data.json`, the two files must be served over HTTP rather than opened directly using the `file://` protocol.
 
-Only one GLOF is confirmed in our lakes and years (South Lhonak, 4 Oct 2023), so the system is
-never trained to recognise disasters. Instead it learns what each lake looks like when **calm**
-and measures how far the latest 10-day window has drifted from that lake's own normal. Five
-signals (lake area, glacier speed, glacier acceleration, a thermal index, and radar-backscatter
-change) are scored per lake, fused with a weighted p-norm into one **risk score (0–1)**, and the
-top signals are reported as the **driver** ("why"). If too little of the lake was visible, the
-window **abstains** instead of scoring. Fitting is **walk-forward** — a window is only ever scored
-by a model trained on its own past — so the retrospective test cannot cheat.
+Run the following command from the directory containing the files:
 
----
+```bash
+python -m http.server 8000
+```
 
-## Headline results (see `evaluation/EVALUATION_REPORT.md`)
+Open the following address in your browser:
 
-- **Detects the real event:** South Lhonak reaches the *watch/concern* level well before the burst.
-- **No leakage:** pre-event scores are identical whether or not post-event data exists (max diff 0.00).
-- **Generalises:** held out entirely, South Lhonak still peaks at 0.79 — the method didn't just memorise.
-- **Honest limitation:** ~2.5 false alarms per lake-year at the current thresholds, and the real
-  event never reaches sustained *high*. So the system is usable as a **ranked watch-list**, not yet
-  as an automatic alarm. Threshold calibration is the main open task.
+```text
+http://localhost:8000
+```
 
----
+Alternatively, open `GEWS_Watch_Console.html` directly in a browser to use the standalone offline version.
 
-## Known limitations / open work
+## Updating the Data Feed
 
-- **DEM is a 2-lake proof-of-concept.** `data/dem_static.csv` covers South Lhonak and Gurudongmar
-  only (coordinates for the other 40 not yet collected). It feeds a future *hazard index*, not the
-  anomaly model.
-- **Radar-benefit number** needs per-sensor observability from the data stage (we only have the combined value).
-- **Threshold calibration** (false-alarm rate) is the main fix needed in the modelling stage.
-- The trained model artifact (`gews_model.pkl`, ~375 MB) is **not committed** — see
-  `models/MODEL_ARTIFACT.md` to regenerate it.
+The console separates the interface from the processed data. To refresh the historical records:
 
----
+1. Update or regenerate the analytical pipeline outputs.
+2. Generate the revised `data.json` using the appropriate processing scripts.
+3. Verify the JSON structure and the generated observation period.
+4. Replace the existing `data.json` file.
+5. Publish the updated file alongside `index.html`.
 
-## Project stages
+The `meta.generated` field records the data-generation timestamp used by the console to indicate the freshness of the feed.
 
-- **Data Collection:** satellite extraction, cloud masking, the common 10-day grid, radar (`data/`).
-- **Model Development:** the anomaly pipeline and risk score (`models/`).
-- **Testing & Evaluation:** the honest test suite and the Sikkim experiment (`evaluation/`).
-- **App Development:** the Watch Console dashboard (`dashboard/`), report and paper.
+Extending the study beyond the current observation period requires an updated data-processing run and a new data version. The fixed thresholds should remain unchanged when reproducing the current study's results.
 
-See `docs/` for the full project spec.
+## Project Scope and Limitations
+
+GEWS is an academic research and decision-support project. It is intended to support historical analysis and exploration of satellite-derived glacial lake indicators.
+
+The current implementation has important limitations:
+
+- The available study period ends on 21 December 2024.
+- The system did not anticipate the South Lhonak outburst at the evaluated concern and high-risk thresholds.
+- Satellite data availability, quality, and observability affect the ability to assess individual lakes.
+- Historical risk scores should not be interpreted as guaranteed predictions of future events.
+- The dashboard is not validated for operational disaster-warning use and does not issue public alerts.
+
+The system should therefore be understood as a research prototype rather than a replacement for official monitoring, forecasting, or disaster-management procedures.
+
+## Authors
+
+Aman Kumar, Keerti T Naik, Hitesh Jain, Brijesh Niranjan K, and Chaitra R.
+
+**Department of Artificial Intelligence and Machine Learning**  
+Dayananda Sagar College of Engineering, Bengaluru, India
