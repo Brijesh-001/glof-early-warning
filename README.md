@@ -16,19 +16,18 @@ a fixed schema; the next stage reads them. That is the whole "connection" — a 
 always be traced to exactly one stage.
 
 ```
- data/            models/              evaluation/           dashboard/
- (Student A)  →   (Student B)      →   (Student C)       →   (Student D)
+ data/        →   models/          →   evaluation/       →   dashboard/
  42 lakes,        per-lake anomaly     lead time, leak        ranked watch-list
  10-day windows   score + driver       check, generalisation  for the officer
  + DEM            → risk 0–1           → is it trustworthy?    → a human decides
 ```
 
-| Stage | Folder | Owner | Reads | Writes |
-|-------|--------|-------|-------|--------|
-| Data | `data/` | Student A | satellite archives | `lake_data/*.csv`, `dem_static.csv` |
-| Modelling | `models/` | Student B | `data/lake_data/` | `outputs/anomaly_scores_all_lakes.csv`, `watchlist_latest.csv` |
-| Evaluation | `evaluation/` | Student C | `models/outputs/` | `outputs/` (metrics, leak check, charts) |
-| Dashboard | `dashboard/` | Student D | `models/outputs/` | the Watch Console UI |
+| Stage | Folder | Reads | Writes |
+|-------|--------|-------|--------|
+| Data | `data/` | satellite archives | `lake_data/*.csv`, `dem_static.csv` |
+| Modelling | `models/` | `data/lake_data/` | `outputs/anomaly_scores_all_lakes.csv`, `watchlist_latest.csv` |
+| Evaluation | `evaluation/` | `models/outputs/` | `outputs/` (metrics, leak check, charts) |
+| Dashboard | `dashboard/` | `models/outputs/` | the Watch Console UI |
 
 ---
 
@@ -41,12 +40,12 @@ pip install -r requirements.txt
 python run_pipeline.py
 
 # or run a stage on its own:
-cd models      && python gews_spec.py ../data/lake_data outputs        # B: score all lakes
-cd evaluation  && python gews_evaluation.py                            # C: metrics + Sikkim test
-cd evaluation  && python gews_leak_gen.py                              # C: leak check + unseen-lake
-cd evaluation  && pytest test_evaluation.py                            # C: 9 harness unit tests
+cd models      && python gews_spec.py ../data/lake_data outputs        # score all lakes
+cd evaluation  && python gews_evaluation.py                            # metrics + Sikkim test
+cd evaluation  && python gews_leak_gen.py                              # leak check + unseen-lake
+cd evaluation  && pytest test_evaluation.py                            # 9 harness unit tests
 
-# D: open the Watch Console (data, modelling, evaluation and testing views)
+# open the Watch Console (data, modelling, evaluation and testing views)
 python dashboard/run.py                                                 # http://127.0.0.1:8000
 ```
 
@@ -84,18 +83,18 @@ by a model trained on its own past — so the retrospective test cannot cheat.
 - **DEM is a 2-lake proof-of-concept.** `data/dem_static.csv` covers South Lhonak and Gurudongmar
   only (coordinates for the other 40 not yet collected). It feeds a future *hazard index*, not the
   anomaly model.
-- **Radar-benefit number** needs Student A's per-sensor observability (we only have the combined value).
-- **Threshold calibration** (false-alarm rate) is the main fix back to Student B.
+- **Radar-benefit number** needs per-sensor observability from the data stage (we only have the combined value).
+- **Threshold calibration** (false-alarm rate) is the main fix needed in the modelling stage.
 - The trained model artifact (`gews_model.pkl`, ~375 MB) is **not committed** — see
   `models/MODEL_ARTIFACT.md` to regenerate it.
 
 ---
 
-## Team roles (A/B/C/D per the project handbooks)
+## Project stages
 
-- **A — Data Collection:** satellite extraction, cloud masking, the common 10-day grid, radar.
-- **B — Model Development:** the anomaly pipeline and risk score (`models/`).
-- **C — Testing & Evaluation:** the honest test suite and the Sikkim experiment (`evaluation/`).
-- **D — App Development:** the Watch Console dashboard (`dashboard/`), report and paper.
+- **Data Collection:** satellite extraction, cloud masking, the common 10-day grid, radar (`data/`).
+- **Model Development:** the anomaly pipeline and risk score (`models/`).
+- **Testing & Evaluation:** the honest test suite and the Sikkim experiment (`evaluation/`).
+- **App Development:** the Watch Console dashboard (`dashboard/`), report and paper.
 
-See `docs/` for the full briefs, handbooks, and the project spec.
+See `docs/` for the full project spec.
