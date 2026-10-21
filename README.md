@@ -166,11 +166,9 @@ The dashboard is a static website and does not require a dedicated application s
 ### Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Brijesh-001/glof-early-warning.git
 cd glof-early-warning
 ```
-
-Replace `<repository-url>` with the repository's clone URL.
 
 ### Run the Console Locally
 
