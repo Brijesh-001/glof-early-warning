@@ -11,9 +11,14 @@ The output of the data stage: satellite measurements reduced to one tidy table p
   - `thermal_index` — melt-season temperature index (MODIS LST)
   - `velocity_trend`, `velocity_accel` — glacier speed and acceleration (ITS_LIVE, **annual**)
   - `observability` — 0–1, how much of the lake was visible this window (gates the model)
+- `lake_coordinates.csv` — seed longitude / latitude for **41 of the 42 lakes** (`shaushar_lake` has no
+  coordinates yet), the half-width of the search box in km (`half_km`), the seed radius in metres, the
+  Sentinel-2 tile, and whether SCL water was used. These are *seed points* used to find each lake, so they can sit a few
+  hundred metres from the lake centre. The dashboard uses them for the **Open imagery** and **Copy coords** buttons and
+  for the 3D watch surface.
 - `dem_static.csv` — static terrain per lake (Copernicus DEM): elevation min/max, relief,
   mean and 90th-percentile slope. **Currently 2 lakes only** (South Lhonak, Gurudongmar) — a
-  proof-of-concept; coordinates for the other 40 are not yet collected.
+  proof-of-concept; terrain for the other 40 is not yet collected.
 
 ## Notes
 - Gaps are **never filled in**: a window with no usable observation stays empty and its

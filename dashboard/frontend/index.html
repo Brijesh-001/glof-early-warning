@@ -3,42 +3,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GEWS Watch Console</title>
+  <title>GEWS | GLOF Triage Board</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath d=%27M1 13l5-9 3 5 2-3 4 7z%27 fill=%27%234ff0a0%27/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
   <script src="/vendor/plotly.min.js"></script>
 </head>
 <body>
 <header>
-  <div class="brand">
-    <h1>GEWS Watch Console</h1>
-    <span class="sub">Glacial Lake Outburst Flood Early-Warning · decision support only</span>
+  <h1>GLOF <i>//</i> TRIAGE BOARD</h1>
+  <p class="sub">Which lakes need a human look this window, and why. <span id="h-n">42</span> lakes · one unsupervised model per lake ·
+    a flag needs the lake to stand out from its own history and from its peers.</p>
+  <div class="chips" id="chips"></div>
+  <div class="refresh">
+    <button class="btn" id="refresh" title="Fetch the newest finished windows for every lake, re-score and re-evaluate (takes several minutes)">&#8635; Refresh data</button>
+    <span id="refresh-status" class="hint"></span>
   </div>
-  <div id="versions" class="versions"></div>
+  <div class="banner"><b>DECISION SUPPORT ONLY.</b> This system never issues a public alert. Where it cannot see a lake it reports
+    <i>cannot assess</i>, which is not the same as safe, and abstaining lakes are drawn hatched grey. A score says how unusual a window is
+    against that lake's own 2017-2024 history; it is <b>not a flood probability</b>.</div>
 </header>
 
 <nav id="tabs">
-  <button data-tab="watch" class="active">Watch-list</button>
+  <button data-tab="board" class="active">Triage board</button>
+  <button data-tab="surface">Watch surface</button>
   <button data-tab="data">Data</button>
   <button data-tab="model">Modelling</button>
   <button data-tab="eval">Evaluation</button>
   <button data-tab="tests">Testing</button>
 </nav>
 
+<div id="scrubwrap">
+  <div class="scrub">
+    <span class="lab">WINDOW</span>
+    <span class="when" id="when">-<small id="season"></small></span>
+    <button class="btn" id="play">&#9654; Play</button>
+    <input type="range" id="slider" min="0" max="0" value="0" aria-label="Observation window">
+    <button class="btn" id="latest">Latest</button>
+    <button class="btn" id="event">Event · <span id="event-label">GLOF</span></button>
+  </div>
+</div>
+
 <main>
-  <!-- WATCH-LIST -->
-  <section id="tab-watch" class="tab active">
-    <div class="notice">This system never issues a public alert. <b>Cannot assess</b> means the lake
-      was not visible — it does <b>not</b> mean safe.</div>
-    <div id="watch-kpis" class="kpis"></div>
-    <div class="grid two">
+  <!-- TRIAGE BOARD -->
+  <section id="tab-board" class="tab active">
+    <div class="kpis" id="board-kpis"></div>
+    <div class="grid board">
       <div class="card">
-        <h2>Ranked watch-list (latest window per lake)</h2>
-        <div class="table-wrap"><table id="watch-table"></table></div>
+        <h2>Attention queue <span class="r" id="q-count"></span></h2>
+        <div class="q-legend">Bar: 0-100 % risk · blue tick = fleet median · grey ticks = Watch / Concern / High lines</div>
+        <div class="queue" id="queue"></div>
+        <div class="sect">Selected lake</div>
+        <div id="lakecard"></div>
+        <div class="sect">Not in the queue</div>
+        <div class="body" id="sidegroups"></div>
       </div>
       <div class="card">
-        <h2>Lake detail <select id="lake-select"></select></h2>
-        <div id="lake-chart" class="chart tall"></div>
-        <div id="lake-meta" class="meta"></div>
+        <h2>Every lake, every window
+          <span class="seg" id="modes">
+            <button class="btn sm on" data-mode="triage">Triage</button>
+            <button class="btn sm" data-mode="risk">Risk</button>
+            <button class="btn sm" data-mode="peers">Vs peers</button>
+          </span></h2>
+        <div class="note tight">Top strip: share of assessed lakes at or above Concern (teal = regional or seasonal window, discounted). Click any cell to jump to that lake and window.</div>
+        <div class="hm-wrap"><canvas id="heat"></canvas></div>
+        <div class="legend" id="heat-legend"></div>
+      </div>
+    </div>
+
+    <div class="card" id="workbench">
+      <h2>Lake workbench <span class="r">click a queue card, a heatmap cell or a chip to open a lake</span></h2>
+      <div class="wb">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline">
+          <div><b id="wb-name" style="font:700 17px var(--mono)"></b> <span id="wb-pill"></span></div>
+          <span class="meta" id="wb-meta"></span>
+        </div>
+        <div class="tt" id="wb-tip">risk vs the fleet median (blue dotted) · hover for a window, click to move the scrubber</div>
+        <canvas id="wb-risk" height="250"></canvas>
+      </div>
+      <div class="sigchips" id="sigchips"></div>
+      <div class="wb" style="padding-top:0"><canvas id="wb-sig" height="110"></canvas></div>
+      <div class="wbfoot" id="wbfoot"></div>
+    </div>
+
+    <div class="grid two">
+      <div class="card"><h2>Can I trust this? <span class="r">held-out test on the 4 Oct 2023 outburst</span></h2>
+        <div class="body" id="trust"></div></div>
+      <div class="card"><h2>What the alert volume looks like <span class="r">all other lakes</span></h2>
+        <div class="table-wrap"><table id="volume"></table></div>
+        <div class="note tight" id="volume-note"></div></div>
+    </div>
+  </section>
+
+  <!-- WATCH SURFACE -->
+  <section id="tab-surface" class="tab">
+    <div class="grid board" style="grid-template-columns: 1fr minmax(380px, 560px)">
+      <div class="card">
+        <h2>Watch surface <span class="r legend" id="surf-legend"></span></h2>
+        <div class="surf">
+          <div class="hud">ASSESSMENT WINDOW<strong id="surf-when">-</strong></div>
+          <canvas id="surf"></canvas>
+          <div class="tip" id="surf-tip"></div>
+        </div>
+        <div class="note tight">Column height is the risk score. Drag to rotate. Lakes sit at their seed coordinates (west to east, north at the back); a lake with no coordinates on file is placed beside its region.</div>
+      </div>
+      <div class="card">
+        <h2>Ranked watch-list <span class="r" id="rank-count"></span></h2>
+        <div class="table-wrap" style="max-height:540px"><table id="rank"></table></div>
       </div>
     </div>
   </section>
@@ -67,6 +137,9 @@
   <!-- MODELLING -->
   <section id="tab-model" class="tab">
     <div id="model-kpis" class="kpis"></div>
+    <div class="card"><h2>Model v2 vs v1 <span class="r">same data, same evaluation code</span></h2>
+      <div class="table-wrap"><table id="v2-table"></table></div>
+      <div class="note tight" id="v2-note"></div></div>
     <div class="grid two">
       <div class="card"><h2>Detector comparison</h2>
         <p class="hint">Run-up peak on South Lhonak (higher = sees the event) vs. false-alarm % on the other lakes (lower = calmer).</p>
@@ -134,6 +207,7 @@
   </section>
 </main>
 
+<script src="board.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

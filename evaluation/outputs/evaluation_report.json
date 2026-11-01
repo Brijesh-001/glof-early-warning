@@ -5,50 +5,50 @@
   "event_date": "2023-10-04",
   "sikkim_lead_time_weeks": {
     "watch": 25.1,
-    "concern": 25.1,
+    "concern": 5.1,
     "high": null
   },
   "false_alarm": {
     "watch": {
-      "episodes": 857,
-      "lake_years": 333.9,
-      "per_lake_year": 2.57,
-      "pct_windows": 63.7
+      "episodes": 324,
+      "lake_years": 336.5,
+      "per_lake_year": 0.96,
+      "pct_windows": 10.2
     },
     "concern": {
-      "episodes": 744,
-      "lake_years": 333.9,
-      "per_lake_year": 2.23,
-      "pct_windows": 46.0
+      "episodes": 251,
+      "lake_years": 336.5,
+      "per_lake_year": 0.75,
+      "pct_windows": 3.2
     },
     "high": {
-      "episodes": 821,
-      "lake_years": 333.9,
-      "per_lake_year": 2.46,
-      "pct_windows": 18.1
+      "episodes": 104,
+      "lake_years": 336.5,
+      "per_lake_year": 0.31,
+      "pct_windows": 1.1
     }
   },
   "cannot_assess": {
-    "overall_pct": 18.5,
-    "monsoon_pct": 17.6,
-    "dry_pct": 19.0
+    "overall_pct": 17.9,
+    "monsoon_pct": 17.2,
+    "dry_pct": 18.3
   },
   "detection": {
     "watch": {
       "detected": true,
-      "control_false_alarms": 857,
-      "precision": 0.0012,
+      "control_false_alarms": 324,
+      "precision": 0.0031,
       "recall": 1.0
     },
     "concern": {
       "detected": true,
-      "control_false_alarms": 744,
-      "precision": 0.0013,
+      "control_false_alarms": 251,
+      "precision": 0.004,
       "recall": 1.0
     },
     "high": {
       "detected": false,
-      "control_false_alarms": 821,
+      "control_false_alarms": 104,
       "precision": 0.0,
       "recall": 0.0
     }
@@ -58,93 +58,93 @@
       "threshold": 0.5,
       "sikkim_lead_weeks": 25.1,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 2.57
+      "control_false_alarms_per_lake_year": 0.96
     },
     {
       "threshold": 0.55,
-      "sikkim_lead_weeks": 25.1,
+      "sikkim_lead_weeks": 23.7,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 2.2
+      "control_false_alarms_per_lake_year": 0.86
     },
     {
       "threshold": 0.6,
-      "sikkim_lead_weeks": 25.1,
+      "sikkim_lead_weeks": 23.7,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 1.96
+      "control_false_alarms_per_lake_year": 0.7
     },
     {
       "threshold": 0.65,
-      "sikkim_lead_weeks": 25.1,
+      "sikkim_lead_weeks": 23.7,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 1.6
+      "control_false_alarms_per_lake_year": 0.64
     },
     {
       "threshold": 0.7,
-      "sikkim_lead_weeks": 25.1,
+      "sikkim_lead_weeks": 5.1,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 2.23
+      "control_false_alarms_per_lake_year": 0.75
     },
     {
       "threshold": 0.75,
-      "sikkim_lead_weeks": 23.7,
+      "sikkim_lead_weeks": 3.7,
       "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 2.35
+      "control_false_alarms_per_lake_year": 0.56
     },
     {
       "threshold": 0.8,
-      "sikkim_lead_weeks": 23.7,
-      "sikkim_detected": true,
-      "control_false_alarms_per_lake_year": 1.95
+      "sikkim_lead_weeks": 0,
+      "sikkim_detected": false,
+      "control_false_alarms_per_lake_year": 0.37
     },
     {
       "threshold": 0.85,
       "sikkim_lead_weeks": 0,
       "sikkim_detected": false,
-      "control_false_alarms_per_lake_year": 2.46
+      "control_false_alarms_per_lake_year": 0.31
     },
     {
       "threshold": 0.9,
       "sikkim_lead_weeks": 0,
       "sikkim_detected": false,
-      "control_false_alarms_per_lake_year": 1.86
+      "control_false_alarms_per_lake_year": 0.02
     },
     {
       "threshold": 0.95,
       "sikkim_lead_weeks": 0,
       "sikkim_detected": false,
-      "control_false_alarms_per_lake_year": 0.66
+      "control_false_alarms_per_lake_year": 0.0
     }
   ],
   "top_false_alarms": [
     {
-      "lake": "changsang_sikkim",
-      "date": "2019-08-19",
-      "risk_score": 1.0,
-      "driver": "glacier speed \u00b7 thermal"
+      "lake": "shako_cho",
+      "date": "2024-09-27",
+      "risk_score": 0.9313084467797281,
+      "driver": "lake area \u00b7 glacier speed \u00b7 glacier accel"
     },
     {
-      "lake": "gurudongmar_lake4",
-      "date": "2018-12-17",
-      "risk_score": 1.0,
-      "driver": "radar change"
+      "lake": "samudra_tapu",
+      "date": "2022-10-28",
+      "risk_score": 0.9108045263257211,
+      "driver": "lake area \u00b7 glacier accel \u00b7 glacier speed"
     },
     {
-      "lake": "ndma081_baspa",
-      "date": "2018-04-01",
-      "risk_score": 1.0,
-      "driver": "radar change"
-    },
-    {
-      "lake": "khangchung_tso",
-      "date": "2020-07-19",
-      "risk_score": 1.0,
-      "driver": "glacier speed \u00b7 glacier accel \u00b7 thermal"
+      "lake": "cwc_sk4_sikkim",
+      "date": "2023-11-27",
+      "risk_score": 0.9103003605936775,
+      "driver": "lake area \u00b7 glacier speed \u00b7 glacier accel"
     },
     {
       "lake": "basudhara_tal",
-      "date": "2020-11-06",
-      "risk_score": 1.0,
-      "driver": "glacier speed \u00b7 glacier accel \u00b7 thermal"
+      "date": "2022-10-08",
+      "risk_score": 0.9094463276264794,
+      "driver": "lake area \u00b7 thermal \u00b7 radar change"
+    },
+    {
+      "lake": "gepang_gath",
+      "date": "2022-10-18",
+      "risk_score": 0.9046138207313811,
+      "driver": "lake area \u00b7 glacier accel \u00b7 glacier speed"
     }
   ]
 }

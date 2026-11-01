@@ -71,5 +71,83 @@
       "peak_runup": 0.793
     }
   ],
-  "n_assessed": 12319
+  "n_assessed": 12413,
+  "model_version": "v2",
+  "v2": {
+    "peer_adjust": {
+      "min_peers": 8,
+      "fill_windows": 6
+    },
+    "fusion": "weighted p-norm over the full weight sum (missing signal = no evidence)",
+    "calibration": {
+      "budgets_top_fraction": {
+        "watch": 0.1,
+        "concern": 0.03,
+        "high": 0.01
+      },
+      "scheme": "walk-forward, refreshed each January from control lakes' past windows only",
+      "raw_quantiles_by_year": {
+        "2020": {
+          "watch": 0.43,
+          "concern": 0.4678,
+          "high": 0.4982,
+          "windows": 638
+        },
+        "2021": {
+          "watch": 0.4094,
+          "concern": 0.4644,
+          "high": 0.5048,
+          "windows": 1121
+        },
+        "2022": {
+          "watch": 0.4345,
+          "concern": 0.4856,
+          "high": 0.5522,
+          "windows": 1607
+        },
+        "2023": {
+          "watch": 0.4765,
+          "concern": 0.5214,
+          "high": 0.5915,
+          "windows": 2104
+        },
+        "2024": {
+          "watch": 0.4924,
+          "concern": 0.5678,
+          "high": 0.6138,
+          "windows": 2630
+        },
+        "2025": {
+          "watch": 0.5043,
+          "concern": 0.5944,
+          "high": 0.6529,
+          "windows": 3142
+        },
+        "2026": {
+          "watch": 0.5082,
+          "concern": 0.5985,
+          "high": 0.6522,
+          "windows": 3570
+        },
+        "2017": {
+          "watch": 0.43,
+          "concern": 0.4678,
+          "high": 0.4982,
+          "windows": 638
+        },
+        "2018": {
+          "watch": 0.43,
+          "concern": 0.4678,
+          "high": 0.4982,
+          "windows": 638
+        },
+        "2019": {
+          "watch": 0.43,
+          "concern": 0.4678,
+          "high": 0.4982,
+          "windows": 638
+        }
+      }
+    }
+  }
 }

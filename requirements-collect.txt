@@ -1,0 +1,10 @@
+# Needed to FETCH new satellite windows (python run_pipeline.py --update): lake area (Sentinel-2),
+# radar (Sentinel-1) and thermal (MODIS) from Microsoft Planetary Computer.
+# Glacier velocity (ITS_LIVE) is optional and lives in requirements-velocity.txt, because its
+# zarr/numcodecs packages have no prebuilt wheel on the newest Python versions.
+-r requirements.txt
+pystac-client>=0.7
+planetary-computer>=1.0
+rasterio>=1.3
+pyproj>=3.6
+requests>=2.28

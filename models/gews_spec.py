@@ -191,9 +191,37 @@ def per_signal_lake(g, detector):
     return out
 
 
-def per_signal_scores(df, detector):
-    return pd.concat([per_signal_lake(g, detector) for _, g in df.groupby("lake")],
-                     ignore_index=True)
+def per_signal_scores(df, detector, n_jobs=1):
+    """Lakes are scored independently, so they can run in parallel (identical results either way)."""
+    groups = [g for _, g in df.groupby("lake")]
+    if n_jobs == 1 or len(groups) < 2:
+        parts = [per_signal_lake(g, detector) for g in groups]
+    else:
+        from joblib import Parallel, delayed
+        parts = Parallel(n_jobs=n_jobs)(delayed(per_signal_lake)(g, detector) for g in groups)
+    return pd.concat(parts, ignore_index=True)
+
+
+# ------------------------------------------------ cache freshness (data fingerprint) --
+def data_fingerprint(data_dir):
+    """Hash of every lake table. A cached score table is only valid for the data it was computed from."""
+    import hashlib
+    h = hashlib.sha1()
+    for f in sorted(glob.glob(os.path.join(data_dir, "*_windows.csv"))):
+        h.update(os.path.basename(f).encode())
+        with open(f, "rb") as fh:
+            h.update(fh.read().replace(b"\r\n", b"\n"))
+    return h.hexdigest()
+
+
+def cache_is_fresh(cache_dir, data_dir):
+    fp = os.path.join(cache_dir, "data_fingerprint.txt")
+    return os.path.exists(fp) and open(fp).read().strip() == data_fingerprint(data_dir)
+
+
+def stamp_cache(cache_dir, data_dir):
+    with open(os.path.join(cache_dir, "data_fingerprint.txt"), "w") as fh:
+        fh.write(data_fingerprint(data_dir))
 
 
 def band(r):
@@ -244,16 +272,24 @@ def false_alarm_rate(res, exclude=EVENT_LAKE):
 
 
 def main():
-    data_dir = sys.argv[1] if len(sys.argv) > 1 else "lake_data"
-    outdir = sys.argv[2] if len(sys.argv) > 2 else "spec_outputs"
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    fast = "--fast" in sys.argv          # production detector only: skip the slow detector comparison
+    data_dir = args[0] if len(args) > 0 else "lake_data"
+    outdir = args[1] if len(args) > 1 else "spec_outputs"
+    n_jobs = int(os.environ.get("GEWS_JOBS", "-1"))      # -1 = all cores, 1 = serial
     os.makedirs(outdir, exist_ok=True)
     cache = os.path.join(outdir, "_cache"); os.makedirs(cache, exist_ok=True)
+    mirror = os.path.join(outdir, "per_signal_cache")    # second copy, read by gews_v2
+    if not cache_is_fresh(cache, data_dir):              # the data changed since the cache was built
+        for f in glob.glob(os.path.join(cache, "ps_*.csv")) + glob.glob(os.path.join(mirror, "ps_*.csv")):
+            os.remove(f)
+        print("[cache] data changed since the cached scores were built: recomputing")
 
     def cached_scores(detector):
         fp = os.path.join(cache, f"ps_{detector}.csv")
         if os.path.exists(fp):
             d = pd.read_csv(fp); d["date"] = pd.to_datetime(d["date"]); return d
-        d = per_signal_scores(df, detector); d.to_csv(fp, index=False); return d
+        d = per_signal_scores(df, detector, n_jobs); d.to_csv(fp, index=False); return d
 
     df = load(data_dir)
     df = add_causal_deseason(df)            # compute causal climatology ONCE
@@ -261,6 +297,9 @@ def main():
 
     # per-signal scores for the production detector (cached after first compute)
     ps_if = cached_scores("isolation_forest")
+    os.makedirs(mirror, exist_ok=True)
+    ps_if.to_csv(os.path.join(mirror, "ps_isolation_forest.csv"), index=False)
+    stamp_cache(cache, data_dir); stamp_cache(mirror, data_dir)
     res = assemble(ps_if)                   # production run (Isolation Forest)
     keep = ["lake", "date", "observability", "status", "band", "risk_score",
             "driver", "n_contributing_signals", "reason"]
@@ -279,14 +318,19 @@ def main():
 
     # p21 detector comparison (IF reuses the table already computed)
     comp = []
-    for det in ["zscore", "isolation_forest", "one_class_svm", "ridge_ar"]:
+    detectors = ["isolation_forest"] if fast else ["zscore", "isolation_forest", "one_class_svm", "ridge_ar"]
+    for det in detectors:
         ps = ps_if if det == "isolation_forest" else cached_scores(det)
         r = assemble(ps)
         comp.append({"detector": det, "peak_runup_southlhonak": round(float(peak_runup(r)), 3),
                      "false_alarm_pct_other_lakes": round(false_alarm_rate(r), 2)})
         print(f"[detector] {det:16s} run-up={comp[-1]['peak_runup_southlhonak']:.3f} "
               f"false-alarm={comp[-1]['false_alarm_pct_other_lakes']:.2f}%")
-    pd.DataFrame(comp).to_csv(f"{outdir}/detector_comparison.csv", index=False)
+    if fast and os.path.exists(f"{outdir}/detector_comparison.csv"):
+        comp = pd.read_csv(f"{outdir}/detector_comparison.csv").to_dict("records")   # keep the last full comparison
+        print("[fast] detector comparison left as last computed (run without --fast to refresh it)")
+    else:
+        pd.DataFrame(comp).to_csv(f"{outdir}/detector_comparison.csv", index=False)
 
     # p22 signal ablation = re-fuse the SAME IF table with a signal removed (no refit)
     abl = [{"config": "all_signals", "peak_runup": round(float(peak_runup(res)), 3)}]
