@@ -8,7 +8,7 @@ screen can always be traced back to the stage that wrote it.
     uvicorn dashboard.backend.main:app --port 8000      # from the repo root
     python dashboard/run.py                             # same, with a friendlier wrapper
 """
-import json, os, subprocess, sys, tempfile, time
+import json, os, subprocess, sys, tempfile, threading, time
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -138,6 +138,146 @@ def lake_scores(lake: str):
     return _records(d)
 
 
+# ---------- triage board (all lakes x all windows in one payload) ----------
+
+REGION = {
+    "Himachal Pradesh": ["chandratal", "gepang_gath", "ndma0", "ndma4", "samudra_tapu", "sccc_"],
+    "Sikkim": ["changsang", "cwc_sk", "gurudongmar", "khangchung", "khecheopalri", "shako_cho",
+               "south_lhonak", "tso_lhamo"],
+    "Ladakh": ["cwc_jk", "shaushar", "suru_glacial"],
+    "Jammu and Kashmir": ["kausar_nag", "mundiksar"],
+    "Uttarakhand": ["basudhara", "satopanth"],
+}
+REGIONAL_SHARE = 0.40          # >= 40 % of assessed lakes at/above Concern at once = regional signal
+TIERS = ["clear", "watch", "concern", "high", "regional", "cannot_assess"]
+
+
+def region_of(lake):
+    for region, keys in REGION.items():
+        if any(lake.startswith(k) for k in keys):
+            return region
+    return "Other"
+
+
+def nice(lake):
+    return lake.replace("_", " ").title()
+
+
+def fetch_info():
+    """Result of the last data fetch (data/update_log.json), or None if the updater has never run."""
+    p = os.path.join(DATA, "update_log.json")
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        log = json.load(f)
+    failed = [{"lake": k, "error": v.get("error", "")} for k, v in log.get("lakes", {}).items()
+              if v.get("status") in ("failed", "no_coordinates")]
+    return {"finished": log.get("finished"), "mode": log.get("mode"), "summary": log.get("summary", {}),
+            "last_finished_window": log.get("last_finished_window"), "failed": failed}
+
+
+def lake_coords():
+    """Seed coordinates per lake from data/lake_coordinates.csv (None where unknown)."""
+    p = os.path.join(DATA, "lake_coordinates.csv")
+    if not os.path.exists(p):
+        return {}
+    c = pd.read_csv(p)
+    out = {}
+    for r in c.to_dict("records"):
+        ok = pd.notna(r["lon"]) and pd.notna(r["lat"])
+        out[r["lake"]] = {"lon": float(r["lon"]) if ok else None, "lat": float(r["lat"]) if ok else None,
+                          "half_km": None if pd.isna(r["half_km"]) else float(r["half_km"]),
+                          "tile": None if pd.isna(r["s2_tile"]) else str(r["s2_tile"])}
+    return out
+
+
+@app.get("/api/board")
+def board():
+    """Everything the triage board needs, computed once here so the browser only draws.
+
+    Tier rules (thresholds come from models/outputs/experiment_log.json):
+      cannot_assess  no valid assessment (never shown as clear)
+      high           risk >= high (0.85)
+      concern        risk >= concern (0.70)
+      watch          risk >= watch (0.50)
+      clear          risk below watch
+      regional       high/concern lake in a window where >= 40 % of assessed lakes are
+                     at/above Concern at once, i.e. a seasonal or regional signal, discounted
+    """
+    s = scores()
+    coords = lake_coords()
+    th = _json(MODEL_OUT, "experiment_log.json")["thresholds"]
+    rep = _json(EVAL_OUT, "evaluation_report.json")
+    has_data = s[s["status"] == "assessed"].groupby("date").size()
+    last = has_data.index.max()
+    s = s[s["date"] <= last]
+    dates = sorted(s["date"].unique())
+    lakes = sorted(s["lake"].unique(), key=lambda l: (region_of(l), l))
+    risk = s.pivot(index="lake", columns="date", values="risk_score").reindex(lakes)[dates]
+    stat = s.pivot(index="lake", columns="date", values="status").reindex(lakes)[dates]
+    obs = s.pivot(index="lake", columns="date", values="observability").reindex(lakes)[dates]
+    drv = s.pivot(index="lake", columns="date", values="driver").reindex(lakes)[dates]
+    why = s.pivot(index="lake", columns="date", values="reason").reindex(lakes)[dates]
+    ok = (stat == "assessed") & risk.notna()
+    n_ok = ok.sum()
+    share_watch = ((risk >= th["watch"]) & ok).sum() / n_ok.replace(0, np.nan)
+    share_conc = ((risk >= th["concern"]) & ok).sum() / n_ok.replace(0, np.nan)
+    regional_win = (share_conc >= REGIONAL_SHARE) & (n_ok >= 10)
+    median = risk.where(ok).median()
+
+    code = np.zeros(risk.shape, dtype=int)
+    r = risk.to_numpy()
+    code[(r >= th["watch"])] = 1
+    code[(r >= th["concern"])] = 2
+    code[(r >= th["high"])] = 3
+    reg = (code >= 2) & regional_win.to_numpy()[None, :]
+    code[reg] = 4
+    code[~ok.to_numpy()] = 5
+
+    def grid(df, nd=None):
+        a = df.astype(object).where(df.notna(), None)
+        out = a.to_numpy().tolist()
+        return [[(round(v, nd) if (nd is not None and v is not None) else v) for v in row] for row in out]
+
+    drivers = sorted({v for v in drv.to_numpy().ravel() if isinstance(v, str)})
+    reasons = sorted({v for v in why.to_numpy().ravel() if isinstance(v, str)})
+    drv_i = [[(drivers.index(v) if isinstance(v, str) else -1) for v in row] for row in drv.to_numpy().tolist()]
+    why_i = [[(reasons.index(v) if isinstance(v, str) else -1) for v in row] for row in why.to_numpy().tolist()]
+
+    # "current" = lakes whose newest assessed window is the board's newest window
+    wl = _csv(MODEL_OUT, "watchlist_latest.csv")
+    newest = pd.Timestamp(dates[-1])
+    n_current = int((pd.to_datetime(wl["date"]) >= newest).sum())
+    has_half = n_ok[n_ok >= len(lakes) / 2]
+    latest_idx = dates.index(has_half.index.max()) if len(has_half) else len(dates) - 1
+    window_end = newest + pd.Timedelta(days=9)
+    days_behind = max(0, (pd.Timestamp.now().normalize() - window_end).days)
+    feed = os.path.join(MODEL_OUT, "anomaly_scores_all_lakes.csv")
+
+    return {
+        "dates": [pd.Timestamp(d).date().isoformat() for d in dates],
+        "latest_idx": int(latest_idx),
+        "lakes": [{"id": l, "name": nice(l), "region": region_of(l), **coords.get(l, {})} for l in lakes],
+        "risk": grid(risk, 3), "obs": grid(obs, 2), "code": code.tolist(),
+        "driver": drv_i, "reason": why_i, "drivers": drivers, "reasons": reasons,
+        "share_watch": [None if pd.isna(v) else round(float(v), 3) for v in share_watch],
+        "share_concern": [None if pd.isna(v) else round(float(v), 3) for v in share_conc],
+        "median": [None if pd.isna(v) else round(float(v), 3) for v in median],
+        "assessed": n_ok.astype(int).tolist(),
+        "tiers": TIERS, "thresholds": th, "regional_share": REGIONAL_SHARE,
+        "event": {"lake": rep["event_lake"], "date": rep["event_date"]},
+        "meta": {
+            "n_lakes": len(lakes), "n_windows": len(dates), "newest_window": pd.Timestamp(newest).date().isoformat(),
+            "newest_window_end": window_end.date().isoformat(), "n_current": n_current,
+            "n_behind": len(lakes) - n_current, "days_behind": int(days_behind),
+            "learned_from": f"{pd.Timestamp(dates[0]).year}-2024",
+            "refreshed": _mtime(feed),
+            "fetch": fetch_info(),
+            "model": (lambda lg: lg["detector"].replace("_", " ") + " " + lg.get("model_version", ""))(_json(MODEL_OUT, "experiment_log.json")).strip(),
+        },
+    }
+
+
 # ---------- data stage (Student A) ----------
 
 @app.get("/api/data/overview")
@@ -192,6 +332,7 @@ def model():
     return {
         "config": {k: v for k, v in log.items() if k not in ("detector_comparison", "ablation")},
         "detector_comparison": _records(_csv(MODEL_OUT, "detector_comparison.csv")),
+        "v1_vs_v2": _records(_csv(MODEL_OUT, "v1_vs_v2.csv")) if os.path.exists(os.path.join(MODEL_OUT, "v1_vs_v2.csv")) else [],
         "ablation": _records(_csv(MODEL_OUT, "ablation_results.csv")),
         "band_counts": s["band"].value_counts().reindex(BANDS, fill_value=0).to_dict(),
         "risk_histogram": {"counts": hist.tolist(), "edges": edges.round(3).tolist()},
@@ -264,6 +405,52 @@ def rerun_evaluation():
         if p.returncode != 0:
             return JSONResponse({"ok": False, "logs": logs}, status_code=500)
     return {"ok": True, "logs": logs}
+
+
+# ---------- keep the whole system current: fetch -> re-score -> re-evaluate ----------
+
+_UPDATE = {"proc": None, "state": "idle", "started": None, "finished": None, "returncode": None,
+           "log": os.path.join(DATA, "update_run.log"), "skip_fetch": False}
+_UPDATE_LOCK = threading.Lock()
+
+
+def _watch(proc, logf):
+    rc = proc.wait()
+    logf.close()
+    with _UPDATE_LOCK:
+        _UPDATE.update(state="done" if rc == 0 else "failed", returncode=rc,
+                       finished=time.strftime("%Y-%m-%d %H:%M:%S"), proc=None)
+
+
+@app.post("/api/pipeline/update")
+def start_update(skip_fetch: bool = False):
+    """Runs `python run_pipeline.py --update` in the background (fetch new windows, re-score, re-evaluate).
+    Poll /api/pipeline/update/status. Only one update can run at a time."""
+    with _UPDATE_LOCK:
+        if _UPDATE["state"] == "running":
+            raise HTTPException(409, "an update is already running")
+        cmd = [sys.executable, "-u", "run_pipeline.py", "--update"] + (["--skip-fetch"] if skip_fetch else [])
+        logf = open(_UPDATE["log"], "w")
+        proc = subprocess.Popen(cmd, cwd=ROOT, stdout=logf, stderr=subprocess.STDOUT, text=True)
+        _UPDATE.update(proc=proc, state="running", started=time.strftime("%Y-%m-%d %H:%M:%S"), finished=None,
+                       returncode=None, skip_fetch=skip_fetch)
+    threading.Thread(target=_watch, args=(proc, logf), daemon=True).start()
+    return {"ok": True, "state": "running"}
+
+
+@app.get("/api/pipeline/update/status")
+def update_status():
+    tail, stage = [], None
+    if os.path.exists(_UPDATE["log"]):
+        with open(_UPDATE["log"], errors="replace") as f:
+            lines = f.read().splitlines()
+        tail = lines[-25:]
+        for ln in lines:
+            if "[stage]" in ln:
+                stage = ln.split("[stage]", 1)[1].strip()
+    with _UPDATE_LOCK:
+        st = {k: _UPDATE[k] for k in ("state", "started", "finished", "returncode", "skip_fetch")}
+    return {**st, "stage": stage, "tail": tail, "fetch": fetch_info()}
 
 
 # ---------- static: chart images written by the pipeline + the frontend ----------

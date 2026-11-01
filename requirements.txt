@@ -1,17 +1,15 @@
-# GEWS — Python dependencies (model + evaluation).
-# Pin to the versions used so the committed results reproduce and the .pkl loads cleanly.
-numpy>=1.26,<2.3
+# GEWS - Python dependencies for the dashboard, model and evaluation.
+# No upper pins: new Python versions (3.13 / 3.14) only have wheels for newer NumPy, and an upper
+# pin makes pip try to compile NumPy from source, which fails on Windows.
+numpy>=1.26
 pandas>=2.0
 scikit-learn>=1.4
 scipy>=1.11
-matplotlib>=3.7
 pytest>=8.0
-# notebooks
-jupyter>=1.0
-nbformat>=5.9
-# dashboard (Student D)
+# dashboard
 fastapi>=0.110
 uvicorn>=0.29
 plotly>=5.18
+httpx>=0.27
 # model persistence
 joblib>=1.3

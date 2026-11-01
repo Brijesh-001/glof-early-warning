@@ -72,55 +72,6 @@ function thresholdShapes(axis = "y") {
   }));
 }
 
-// ---------------- Watch-list ----------------
-async function loadWatch() {
-  const [s, wl] = await Promise.all([api("/api/summary"), api("/api/watchlist")]);
-  STATE.thresholds = s.thresholds;
-  document.getElementById("versions").innerHTML =
-    `model <b>${s.model_version}</b> · data <b>${s.data_version}</b><br>outputs updated ${s.outputs_updated.models}`;
-  const b = s.latest_bands;
-  kpis("watch-kpis", [
-    [s.n_lakes, "lakes monitored"], [b.high, "High (≥0.85)"], [b.concern, "Concern (≥0.70)"],
-    [b.watch, "Watch (≥0.50)"], [b.ok, "Low"], [b.cannot_assess, "Cannot assess"],
-    [s.n_windows.toLocaleString(), `windows ${s.date_range[0]} → ${s.date_range[1]}`],
-  ]);
-  table("watch-table", wl, [
-    { key: "lake", label: "Lake" },
-    { key: "band", label: "Status", render: (v) => pill(v, BAND_LABEL[v] || v) },
-    { key: "risk_score", label: "Risk", digits: 2 },
-    { key: "driver", label: "Driver (why)" },
-    { key: "observability", label: "Visible", render: (v) => v == null ? "—" : `${Math.round(v * 100)}%` },
-    { key: "date", label: "Window" },
-  ], { key: "lake", onClick: (lake) => { document.getElementById("lake-select").value = lake; loadLake(lake); } });
-
-  const sel = document.getElementById("lake-select");
-  sel.innerHTML = wl.map((r) => `<option>${r.lake}</option>`).join("");
-  sel.onchange = () => loadLake(sel.value);
-  sel.value = wl[0].lake;
-  loadLake(wl[0].lake);
-}
-
-async function loadLake(lake) {
-  const rows = await api(`/api/lakes/${lake}/scores`);
-  const assessed = rows.filter((r) => r.status === "assessed");
-  const abst = rows.filter((r) => r.status !== "assessed");
-  plot("lake-chart", [
-    { x: assessed.map((r) => r.date), y: assessed.map((r) => r.risk_score), type: "scatter", mode: "lines",
-      name: "risk", line: { color: css("--muted"), width: 1 }, hoverinfo: "skip" },
-    { x: assessed.map((r) => r.date), y: assessed.map((r) => r.risk_score), type: "scatter", mode: "markers",
-      name: "assessed window", marker: { size: 5, color: assessed.map((r) => bandColor(r.band)) },
-      text: assessed.map((r) => `${BAND_LABEL[r.band]} · ${r.driver || ""}`),
-      hovertemplate: "%{x|%d %b %Y}<br>risk %{y:.2f}<br>%{text}<extra></extra>" },
-    { x: abst.map((r) => r.date), y: abst.map(() => -0.04), type: "scatter", mode: "markers",
-      name: "cannot assess", marker: { symbol: "line-ns-open", size: 8, color: css("--abst") },
-      text: abst.map((r) => r.reason), hovertemplate: "%{x|%d %b %Y}<br>cannot assess: %{text}<extra></extra>" },
-  ], { yaxis: { range: [-0.08, 1.02], title: "risk score", gridcolor: css("--line") }, shapes: thresholdShapes() });
-  const last = rows[rows.length - 1];
-  document.getElementById("lake-meta").innerHTML =
-    `<b>${rows.length}</b> windows · <b>${assessed.length}</b> assessed · <b>${abst.length}</b> cannot assess · ` +
-    `peak risk <b>${fmt(Math.max(...assessed.map((r) => r.risk_score)), 2)}</b> · last window ${last.date.slice(0, 10)}`;
-}
-
 // ---------------- Data ----------------
 async function loadData() {
   const ov = await api("/api/data/overview");
@@ -133,7 +84,7 @@ async function loadData() {
   plot("coverage-chart", [{
     type: "heatmap", y: lakes, x: SIGNALS.map((s) => SIGNAL_LABEL[s]).concat(["Observability"]),
     z: ov.lakes.map((r) => SIGNALS.map((s) => r[`${s}_coverage_pct`]).concat([Math.round(r.mean_observability * 100)])),
-    colorscale: "Blues", zmin: 0, zmax: 100, colorbar: { title: "%" },
+    colorscale: [[0, "#0d131b"], [1, "#4ff0a0"]], zmin: 0, zmax: 100, colorbar: { title: "%" },
     hovertemplate: "%{y}<br>%{x}: %{z}%<extra></extra>",
   }], { margin: { l: 140, r: 10, t: 10, b: 70 }, yaxis: { autorange: "reversed", tickfont: { size: 10 } } });
 
@@ -176,6 +127,22 @@ async function loadDataLake(lake) {
 }
 
 // ---------------- Modelling ----------------
+function v2table(rows) {
+  const el = document.getElementById("v2-table"), note = document.getElementById("v2-note");
+  if (!rows || rows.length < 2) { el.innerHTML = ""; note.textContent = "Run python run_pipeline.py to generate the v1 vs v2 comparison."; return; }
+  const [v1, v2] = rows;
+  const L = [["event_rank_40d", "South Lhonak rank among lakes, 40 d before burst (1 = highest)"], ["event_rank_180d", "... 180 d before burst"],
+    ["event_peak_runup_40d", "South Lhonak peak score, 40 d before burst"], ["lead_wk_watch", "lead time at Watch (weeks)"],
+    ["lead_wk_concern", "lead time at Concern (weeks)"], ["lead_wk_high", "lead time at High, sustained (weeks)"],
+    ["pct_control_windows_watch", "calm-lake windows at or above Watch (%)"], ["pct_control_windows_concern", "calm-lake windows at or above Concern (%)"],
+    ["pct_control_windows_high", "calm-lake windows at or above High (%)"], ["false_alarms_per_lake_year_concern", "false alarms per lake-year (Concern)"],
+    ["mean_share_lakes_concern_2019_2020", "share of lakes at Concern in 2019-2020 (common-mode artefact)"]];
+  const f = (v) => (v === null || v === undefined || v === "" ? "never" : v);
+  el.innerHTML = "<thead><tr><th>Metric</th><th>v1</th><th>v2</th></tr></thead><tbody>" +
+    L.map(([k, t]) => `<tr><td>${t}</td><td>${f(v1[k])}</td><td><b>${f(v2[k])}</b></td></tr>`).join("") + "</tbody>";
+  note.textContent = "v2 keeps v1's per-signal detectors and changes the fusion: peer-relative scores, corroboration, annual-signal cap, budget calibration. One confirmed outburst cannot prove predictive skill; see models/MODEL_V2_NOTE.md.";
+}
+
 async function loadModel() {
   const m = await api("/api/model");
   const c = m.config, bc = m.band_counts;
@@ -186,10 +153,11 @@ async function loadModel() {
     ...Object.entries(bc).map(([b, n]) => [`${(100 * n / total).toFixed(1)}%`, `${BAND_LABEL[b]} windows`]),
   ]);
 
+  v2table(m.v1_vs_v2);
   const det = m.detector_comparison;
   plot("detector-chart", [
     { x: det.map((r) => r.detector), y: det.map((r) => r.peak_runup_southlhonak), type: "bar", name: "peak run-up (South Lhonak)",
-      marker: { color: det.map((r) => r.detector === c.detector ? css("--accent") : "#9fb3e0") }, text: det.map((r) => r.peak_runup_southlhonak), textposition: "outside" },
+      marker: { color: det.map((r) => r.detector === c.detector ? css("--accent") : "#5b8cff") }, text: det.map((r) => r.peak_runup_southlhonak), textposition: "outside" },
     { x: det.map((r) => r.detector), y: det.map((r) => r.false_alarm_pct_other_lakes), type: "scatter", mode: "lines+markers+text",
       name: "false-alarm % (other lakes)", yaxis: "y2", line: { color: css("--high") }, text: det.map((r) => `${r.false_alarm_pct_other_lakes}%`), textposition: "top center" },
   ], { yaxis: { title: "peak run-up", range: [0, 1.1], gridcolor: css("--line") },
@@ -199,7 +167,7 @@ async function loadModel() {
   plot("ablation-chart", [{
     y: ab.map((r) => r.config.replace("drop_", "drop ").replace("all_signals", "all signals")), x: ab.map((r) => r.peak_runup),
     type: "bar", orientation: "h", text: ab.map((r) => r.peak_runup), textposition: "outside",
-    marker: { color: ab.map((r) => r.config === "all_signals" ? css("--accent") : "#9fb3e0") },
+    marker: { color: ab.map((r) => r.config === "all_signals" ? css("--accent") : "#5b8cff") },
   }], { xaxis: { range: [0, 1], title: "peak run-up", gridcolor: css("--line") }, margin: { l: 170, r: 30, t: 10, b: 45 } });
 
   const h = m.risk_histogram, mids = h.edges.slice(0, -1).map((e, i) => (e + h.edges[i + 1]) / 2);
@@ -218,7 +186,7 @@ async function loadModel() {
     { margin: { l: 120, r: 20, t: 10, b: 40 }, xaxis: { title: "assessed windows naming this driver", gridcolor: css("--line") } });
 
   plot("weights-chart", [{ x: Object.keys(c.weights).map((k) => SIGNAL_LABEL[k]), y: Object.values(c.weights), type: "bar",
-    marker: { color: "#00897b" }, text: Object.values(c.weights), textposition: "outside" }],
+    marker: { color: "#4ff0a0" }, text: Object.values(c.weights), textposition: "outside" }],
     { yaxis: { range: [0, 0.4], title: "weight", gridcolor: css("--line") }, margin: { l: 55, r: 10, t: 10, b: 40 } });
   document.getElementById("config").innerHTML =
     `Isolation Forest: <b>${c.if_params.n_estimators}</b> trees, max_samples <b>${c.if_params.max_samples}</b>, contamination <b>${c.if_params.contamination}</b> · ` +
@@ -290,7 +258,7 @@ async function loadEval() {
 
   const ctrl = lk.unseen_lake.filter((x) => x.role === "control"), ev = lk.unseen_lake.find((x) => x.role === "event");
   plot("unseen-chart", [{ x: ctrl.map((x) => x.lake), y: ctrl.map((x) => x.pct_windows_concern_unseen), type: "bar",
-    marker: { color: "#9fb3e0" }, text: ctrl.map((x) => `${x.pct_windows_concern_unseen}%`), textposition: "outside", name: "control lakes" }],
+    marker: { color: "#5b8cff" }, text: ctrl.map((x) => `${x.pct_windows_concern_unseen}%`), textposition: "outside", name: "control lakes" }],
     { yaxis: { title: "% windows ≥ Concern (held out)", gridcolor: css("--line") }, showlegend: false,
       annotations: [{ xref: "paper", yref: "paper", x: 1, y: 1, xanchor: "right", showarrow: false,
         text: `<b>${ev.lake}</b> (event, held out): peak pre-burst risk <b>${ev.peak_preburst_risk_unseen}</b>` }] });
@@ -335,16 +303,19 @@ async function rerunEval() {
 }
 
 // ---------------- tabs ----------------
-const loaders = { watch: loadWatch, data: loadData, model: loadModel, eval: loadEval, tests: runTests };
+const loaders = { board: () => loadBoard(), surface: () => loadBoard(), data: loadData, model: loadModel, eval: loadEval, tests: runTests };
 const loaded = {};
 function show(tab) {
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   document.querySelectorAll(".tab").forEach((s) => s.classList.toggle("active", s.id === `tab-${tab}`));
-  if (!loaded[tab]) { loaded[tab] = true; loaders[tab]().catch((e) => alert(e)); }
+  const live = tab === "board" || tab === "surface";   // these two share the window scrubber
+  document.getElementById("scrubwrap").style.display = live ? "" : "none";
+  if (!loaded[tab]) { loaded[tab] = true; loaders[tab]().then(() => live && boardShown(tab)).catch((e) => alert(e)); }
+  else if (live) boardShown(tab);
   else window.dispatchEvent(new Event("resize"));
   history.replaceState(null, "", `#${tab}`);
 }
 document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => show(b.dataset.tab)));
 document.getElementById("run-tests").addEventListener("click", runTests);
 document.getElementById("rerun-eval").addEventListener("click", rerunEval);
-show(location.hash.slice(1) in loaders ? location.hash.slice(1) : "watch");
+show(location.hash.slice(1) in loaders ? location.hash.slice(1) : "board");

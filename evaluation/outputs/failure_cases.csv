@@ -1,9 +1,9 @@
 lake,date,risk_score,band,driver
-changsang_sikkim,2019-08-19,1.0,high,glacier speed · thermal
-gurudongmar_lake4,2018-12-17,1.0,high,radar change
-ndma081_baspa,2018-04-01,1.0,high,radar change
-khangchung_tso,2020-07-19,1.0,high,glacier speed · glacier accel · thermal
-basudhara_tal,2020-11-06,1.0,high,glacier speed · glacier accel · thermal
-ndma436_chandra,2020-08-08,1.0,high,glacier speed · glacier accel · thermal
-ndma077_parvati,2018-04-11,1.0,high,radar change
-ndma438_spiti,2018-09-18,1.0,high,radar change
+shako_cho,2024-09-27,0.9313084467797281,high,lake area · glacier speed · glacier accel
+samudra_tapu,2022-10-28,0.9108045263257211,high,lake area · glacier accel · glacier speed
+cwc_sk4_sikkim,2023-11-27,0.9103003605936775,high,lake area · glacier speed · glacier accel
+basudhara_tal,2022-10-08,0.9094463276264794,high,lake area · thermal · radar change
+gepang_gath,2022-10-18,0.9046138207313811,high,lake area · glacier accel · glacier speed
+cwc_sk11_sikkim,2024-09-27,0.90417485173552,high,lake area · glacier accel · glacier speed
+kausar_nag,2024-09-07,0.8996637780433239,high,lake area · glacier speed
+cwc_sk9_sikkim,2022-11-07,0.8948251942944895,high,lake area · radar change
